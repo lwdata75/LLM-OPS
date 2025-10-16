@@ -75,7 +75,11 @@ def submit_pipeline(compiled_pipeline_path: str):
         "per_device_train_batch_size": 1,
         "gradient_accumulation_steps": 4,
         "lora_r": 16,
-        "lora_alpha": 32
+        "lora_alpha": 32,
+        # Inference parameters
+        "max_new_tokens": 50,
+        "temperature": 0.7,
+        "num_inference_samples": -1
     }
     
     # Submit the pipeline job
