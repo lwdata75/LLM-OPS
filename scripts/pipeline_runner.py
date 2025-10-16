@@ -17,7 +17,7 @@ load_dotenv()
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from src.pipelines.model_training_pipeline import yoda_data_preprocessing_pipeline
+from src.pipelines.model_training_pipeline import yoda_model_training_pipeline
 
 # Configuration
 PROJECT_ID = os.getenv("GCP_PROJECT_ID")
@@ -26,8 +26,8 @@ BUCKET_NAME = os.getenv("GCP_BUCKET_NAME")
 PIPELINE_ROOT = f"gs://{BUCKET_NAME}/pipeline_runs"
 
 # Pipeline configuration
-PIPELINE_NAME = "yoda-data-preprocessing"
-DISPLAY_NAME = "Yoda Data Preprocessing Pipeline"
+PIPELINE_NAME = "yoda-model-training"
+DISPLAY_NAME = "Yoda Model Training Pipeline with Fine-tuning"
 
 def compile_pipeline():
     """Compile the pipeline to a JSON file."""
@@ -43,7 +43,7 @@ def compile_pipeline():
     # Compile the pipeline
     compiler = Compiler()
     compiler.compile(
-        pipeline_func=yoda_data_preprocessing_pipeline,
+        pipeline_func=yoda_model_training_pipeline,
         package_path=compiled_pipeline_path
     )
     
@@ -67,7 +67,15 @@ def submit_pipeline(compiled_pipeline_path: str):
         "output_gcs_bucket": BUCKET_NAME,
         "test_size": 0.2,
         "random_state": 42,
-        "use_extra_translation": True
+        "use_extra_translation": True,
+        # Fine-tuning parameters
+        "model_name": "microsoft/Phi-3-mini-4k-instruct",
+        "learning_rate": 2e-4,
+        "num_train_epochs": 1,
+        "per_device_train_batch_size": 1,
+        "gradient_accumulation_steps": 4,
+        "lora_r": 16,
+        "lora_alpha": 32
     }
     
     # Submit the pipeline job
@@ -98,7 +106,7 @@ def submit_pipeline(compiled_pipeline_path: str):
 def main():
     """Main function to compile and submit the pipeline."""
     print("=" * 60)
-    print("🤖 Yoda Data Preprocessing Pipeline Runner")
+    print("🤖 Yoda Model Training Pipeline Runner")
     print("=" * 60)
     
     # Validate environment variables
