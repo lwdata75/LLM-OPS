@@ -10,12 +10,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # GCP Configuration
-GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID")
+GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID", "aerobic-polygon-460910-v9")
 GCP_REGION = os.getenv("GCP_REGION", "europe-west2")
-GCP_BUCKET_NAME = os.getenv("GCP_BUCKET_NAME")
+GCP_BUCKET_NAME = os.getenv("GCP_BUCKET_NAME", "llmops_101_europ")
 
 # Data paths
-RAW_DATA_GCS_PATH = f"gs://{GCP_BUCKET_NAME}/15-10-2025-08:50:00/yoda_sentences.csv"
+RAW_DATA_GCS_PATH = f"gs://{GCP_BUCKET_NAME}/20-10-2025-08:28:00 - FOOD/COMBINED_FOOD_DATASET.csv"
 PROCESSED_DATA_LOCAL_DIR = "data/processed"
 TRAIN_DATA_FILENAME = "train_dataset.csv"
 TEST_DATA_FILENAME = "test_dataset.csv"
@@ -23,6 +23,16 @@ TEST_DATA_FILENAME = "test_dataset.csv"
 # Model configuration
 TEST_SIZE = 0.2
 RANDOM_STATE = 42
+
+# Nutrition dataset specific constants
+NUTRITION_COLUMNS = [
+    'food', 'Caloric Value', 'Fat', 'Saturated Fats', 'Carbohydrates', 
+    'Sugars', 'Protein', 'Dietary Fiber', 'Sodium', 'Vitamin C', 
+    'Calcium', 'Iron', 'Nutrition Density'
+]
+
+# Key nutrition metrics for responses
+KEY_MACROS = ['Caloric Value', 'Fat', 'Carbohydrates', 'Protein']
 
 # Validation
 def validate_constants():

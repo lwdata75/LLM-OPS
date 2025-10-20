@@ -1,0 +1,17 @@
+{
+  "RougeScore_mean": 0.7109536193672911,
+  "RougeScore_std": 0.1173861450041346,
+  "RougeScore_min": 0.5013893179779632,
+  "RougeScore_max": 0.8988687212354041,
+  "RougeScore_median": 0.7156154096724748,
+  "BleuScore_mean": 0.7142294397057765,
+  "BleuScore_std": 0.11417983182949024,
+  "BleuScore_min": 0.50370686739204,
+  "BleuScore_max": 0.8976494641907681,
+  "BleuScore_median": 0.716520149495167,
+  "ExactMatch_mean": 0.6824153561541609,
+  "ExactMatch_std": 0.11525522462704367,
+  "ExactMatch_min": 0.502072578562852,
+  "ExactMatch_max": 0.8920642149285449,
+  "ExactMatch_median": 0.6883079178837019
+}

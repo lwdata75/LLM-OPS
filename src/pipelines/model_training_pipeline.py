@@ -1,5 +1,5 @@
 """
-Kubeflow Pipeline for Yoda sentence model training with Phi-3 fine-tuning.
+Kubeflow Pipeline for nutrition assistant model training with Phi-3 fine-tuning.
 """
 
 import os
@@ -13,18 +13,18 @@ sys.path.insert(0, project_root)
 from src.pipeline_components.data_transformation_component import data_transformation_component
 from src.pipeline_components.fine_tuning_component import fine_tuning_component
 from src.pipeline_components.inference_component import inference_component
+from src.pipeline_components.evaluation_component import evaluation_component
 
 @pipeline(
-    name="yoda-model-training-pipeline",
-    description="Pipeline to preprocess data, fine-tune Phi-3 with LoRA, and generate predictions",
+    name="nutrition-assistant-training-pipeline",
+    description="Pipeline to preprocess nutrition data, fine-tune Phi-3 with LoRA, generate predictions, and evaluate results",
     pipeline_root="gs://llmops_101_europ/pipeline_runs"
 )
-def yoda_model_training_pipeline(
-    input_gcs_path: str = "gs://llmops_101_europ/15-10-2025-08:50:00/yoda_sentences.csv",
+def nutrition_assistant_training_pipeline(
+    input_gcs_path: str = "gs://llmops_101_europ/20-10-2025-08:28:00 - FOOD/COMBINED_FOOD_DATASET.csv",
     output_gcs_bucket: str = "llmops_101_europ",
     test_size: float = 0.2,
     random_state: int = 42,
-    use_extra_translation: bool = True,
     # Fine-tuning hyperparameters
     model_name: str = "microsoft/Phi-3-mini-4k-instruct",
     learning_rate: float = 2e-4,
@@ -39,14 +39,13 @@ def yoda_model_training_pipeline(
     num_inference_samples: int = -1
 ):
     """
-    Yoda model training pipeline with data preprocessing, Phi-3 fine-tuning, and inference.
+    Nutrition assistant model training pipeline with data preprocessing, Phi-3 fine-tuning, inference, and evaluation.
     
     Args:
         input_gcs_path (str): GCS path to input CSV file
         output_gcs_bucket (str): GCS bucket name for output files
         test_size (float): Proportion of test set (default: 0.2)
         random_state (int): Random seed for reproducibility (default: 42)
-        use_extra_translation (bool): Whether to use translation_extra column (default: True)
         model_name (str): Hugging Face model name for fine-tuning
         learning_rate (float): Learning rate for fine-tuning
         num_train_epochs (int): Number of training epochs
@@ -64,8 +63,7 @@ def yoda_model_training_pipeline(
         input_gcs_path=input_gcs_path,
         output_gcs_bucket=output_gcs_bucket,
         test_size=test_size,
-        random_state=random_state,
-        use_extra_translation=use_extra_translation
+        random_state=random_state
     )
     
     # Set display name for better visualization in Vertex AI
@@ -102,7 +100,7 @@ def yoda_model_training_pipeline(
     # Inference step
     inference_task = inference_component(
         model_path=fine_tuning_task.outputs["model_output_path"],
-        test_dataset=data_transform_task.outputs["test_output_path"],
+        test_dataset_path=data_transform_task.outputs["test_output_path"],
         max_new_tokens=max_new_tokens,
         temperature=temperature,
         num_samples=num_inference_samples
@@ -117,18 +115,31 @@ def yoda_model_training_pipeline(
     inference_task.set_memory_limit("32G")
     inference_task.set_cpu_request("4")
     inference_task.set_memory_request("16G")
+    
+    # Evaluation step
+    evaluation_task = evaluation_component(
+        predictions=inference_task.outputs["predictions_output_path"]
+    )
+    
+    # Set display name for better visualization in Vertex AI
+    evaluation_task.set_display_name("Ragas Evaluation")
+    
+    # Set resource requirements for evaluation (CPU-only task)
+    evaluation_task.set_cpu_limit("4")
+    evaluation_task.set_memory_limit("8G")
+    evaluation_task.set_cpu_request("2")
+    evaluation_task.set_memory_request("4G")
 
 if __name__ == "__main__":
     # This allows testing the pipeline definition
     print("✅ Pipeline definition created successfully!")
-    print("Pipeline name: yoda-model-training-pipeline")
-    print("Components: data_transformation_component, fine_tuning_component, inference_component")
+    print("Pipeline name: nutrition-assistant-training-pipeline")
+    print("Components: data_transformation_component, fine_tuning_component, inference_component, evaluation_component")
     print("Default parameters:")
-    print(f"  - input_gcs_path: gs://llmops_101_europ/15-10-2025-08:50:00/yoda_sentences.csv")
+    print(f"  - input_gcs_path: gs://llmops_101_europ/20-10-2025-08:28:00 - FOOD/COMBINED_FOOD_DATASET.csv")
     print(f"  - output_gcs_bucket: llmops_101_europ")
     print(f"  - test_size: 0.2")
     print(f"  - random_state: 42")
-    print(f"  - use_extra_translation: True")
     print(f"  - model_name: microsoft/Phi-3-mini-4k-instruct")
     print(f"  - learning_rate: 2e-4")
     print(f"  - num_train_epochs: 1")

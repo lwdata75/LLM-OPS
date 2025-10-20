@@ -3,7 +3,7 @@ Kubeflow Pipeline component for inference with fine-tuned Phi-3 model.
 Takes fine-tuned model and test dataset, outputs predictions in ragas format.
 """
 
-from kfp.dsl import component, InputPath, OutputPath
+from kfp.dsl import component, InputPath, Output, Dataset
 from typing import NamedTuple
 
 @component(
@@ -19,8 +19,8 @@ from typing import NamedTuple
 )
 def inference_component(
     model_path: InputPath(str),
-    test_dataset: InputPath(str),
-    predictions_output_path: OutputPath(str),
+    test_dataset_path: InputPath(str),
+    predictions_output_path: Output[Dataset],
     max_new_tokens: int = 50,
     temperature: float = 0.7,
     top_p: float = 0.9,
@@ -32,7 +32,7 @@ def inference_component(
     Args:
         model_path (InputPath): Path to fine-tuned model directory
         test_dataset (InputPath): Path to test dataset in JSON format
-        predictions_output_path (OutputPath): Path to save predictions CSV
+        predictions_output_path (Output[Dataset]): Dataset artifact for predictions CSV
         max_new_tokens (int): Maximum tokens to generate
         temperature (float): Sampling temperature
         top_p (float): Top-p sampling parameter
@@ -187,8 +187,8 @@ def inference_component(
     logger.info(f"  Data type: {next(model.parameters()).dtype}")
     
     # Step 2: Load test dataset
-    logger.info(f"📂 Loading test dataset from: {test_dataset}")
-    with open(test_dataset, 'r') as f:
+    logger.info(f"📂 Loading test dataset from: {test_dataset_path}")
+    with open(test_dataset_path, 'r') as f:
         test_data = [json.loads(line) for line in f]
     
     logger.info(f"✅ Loaded {len(test_data)} test examples")
@@ -262,10 +262,10 @@ def inference_component(
     predictions_df = pd.DataFrame(predictions)
     
     # Create output directory
-    os.makedirs(os.path.dirname(predictions_output_path), exist_ok=True)
+    os.makedirs(os.path.dirname(predictions_output_path.path), exist_ok=True)
     
     # Save to CSV
-    predictions_df.to_csv(predictions_output_path, index=False)
+    predictions_df.to_csv(predictions_output_path.path, index=False)
     
     # Calculate statistics
     num_predictions = len(predictions)
@@ -274,7 +274,7 @@ def inference_component(
     logger.info(f"✅ Inference completed successfully!")
     logger.info(f"  📊 Generated {num_predictions} predictions")
     logger.info(f"  📏 Average response length: {avg_response_length:.1f} words")
-    logger.info(f"  💾 Saved to: {predictions_output_path}")
+    logger.info(f"  💾 Saved to: {predictions_output_path.path}")
     
     # Show sample predictions
     logger.info(f"📋 Sample predictions:")

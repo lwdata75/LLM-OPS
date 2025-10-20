@@ -9,7 +9,6 @@ __pycache__/
 # Environment variables
 .env
 .env.local
-.env.example
 
 # IDE
 .vscode/
@@ -28,6 +27,16 @@ Thumbs.db
 .coverage
 htmlcov/
 
-# Data files
-*.csv
-!yoda_sentences.csv
+# Data files - Keep nutrition dataset
+!COMBINED_FOOD_DATASET.csv
+
+# Generated files to keep
+!nutrition_*.json
+!nutrition_*.csv
+!inference_predictions.csv
+!compiled_nutrition_pipeline_with_evaluation.yaml
+!pipeline_artifacts/nutrition-assistant-training_*.json
+
+# Temporary files
+temp_*
+test_*

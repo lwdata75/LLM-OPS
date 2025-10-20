@@ -1,0 +1,31 @@
+{
+  "validation_timestamp": "2025-10-20T09:08:48.533738",
+  "project_name": "nutrition-assistant-training-pipeline",
+  "validations": {
+    "project_structure": true,
+    "dataset": true,
+    "pipeline_artifacts": true,
+    "generated_files": true,
+    "configuration": true
+  },
+  "dataset_info": {
+    "total_foods": 2395,
+    "columns": 35,
+    "size_mb": 0.79
+  },
+  "test_results": {
+    "predictions_evaluated": 100,
+    "metrics_used": [
+      "RougeScore",
+      "BleuScore",
+      "ExactMatch"
+    ],
+    "main_scores": {
+      "RougeScore": 0.7109536193672911,
+      "BleuScore": 0.7142294397057765,
+      "ExactMatch": 0.6824153561541609
+    },
+    "overall_quality": "Good",
+    "average_score": 0.7025328050757428
+  }
+}

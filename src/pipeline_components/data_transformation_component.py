@@ -1,6 +1,6 @@
 """
 Kubeflow Pipeline component for data transformation.
-Converts Yoda sentences dataset to conversational format for Phi-3 fine-tuning.
+Converts nutrition dataset to conversational format for Phi-3 fine-tuning.
 """
 
 from kfp.dsl import component, OutputPath
@@ -22,11 +22,10 @@ def data_transformation_component(
     train_output_path: OutputPath(str),
     test_output_path: OutputPath(str),
     test_size: float = 0.2,
-    random_state: int = 42,
-    use_extra_translation: bool = True
+    random_state: int = 42
 ) -> NamedTuple("DataTransformationOutput", [("train_examples", int), ("test_examples", int)]):
     """
-    Data transformation component for Yoda sentences dataset.
+    Data transformation component for nutrition dataset.
     
     Args:
         input_gcs_path (str): GCS path to input CSV file (gs://bucket/path/file.csv)
@@ -35,7 +34,6 @@ def data_transformation_component(
         test_output_path (OutputPath): Path for test dataset output
         test_size (float): Proportion of test set (default: 0.2)
         random_state (int): Random seed for reproducibility (default: 42)
-        use_extra_translation (bool): Whether to use translation_extra column (default: True)
     
     Returns:
         NamedTuple: Contains train_examples and test_examples counts
@@ -57,7 +55,6 @@ def data_transformation_component(
     logger.info(f"Output GCS bucket: {output_gcs_bucket}")
     logger.info(f"Test size: {test_size}")
     logger.info(f"Random state: {random_state}")
-    logger.info(f"Use extra translation: {use_extra_translation}")
     
     def load_dataset_from_gcs(gcs_path: str) -> pd.DataFrame:
         """Load dataset from GCS."""
@@ -71,21 +68,63 @@ def data_transformation_component(
             logger.error(f"Failed to load dataset from GCS: {str(e)}")
             raise
     
-    def format_to_conversational(df: pd.DataFrame, use_extra: bool) -> List[Dict[str, Any]]:
-        """Convert to conversational format."""
+    def format_to_conversational(df: pd.DataFrame) -> List[Dict[str, Any]]:
+        """Convert nutrition data to conversational format."""
         logger.info(f"Converting {len(df)} rows to conversational format")
         
         conversations = []
-        translation_column = "translation_extra" if use_extra else "translation"
-        
-        if translation_column not in df.columns:
-            logger.warning(f"Column '{translation_column}' not found. Using 'translation' instead.")
-            translation_column = "translation"
         
         for _, row in df.iterrows():
+            food_name = row["food"]
+            calories = row.get("Caloric Value", "N/A")
+            protein = row.get("Protein", "N/A")
+            fat = row.get("Fat", "N/A")
+            carbs = row.get("Carbohydrates", "N/A")
+            fiber = row.get("Dietary Fiber", "N/A")
+            
+            # Create different types of questions for variety
+            import random
+            question_types = [
+                f"What are the nutritional values for {food_name}?",
+                f"Tell me about the macros in {food_name}",
+                f"How many calories are in {food_name}?",
+                f"What is the protein content of {food_name}?",
+                f"Give me the nutritional breakdown of {food_name}",
+                f"What are the calories and macros for {food_name}?"
+            ]
+            
+            question = random.choice(question_types)
+            
+            # Create a comprehensive answer
+            answer_parts = []
+            if calories != "N/A":
+                answer_parts.append(f"Calories: {calories} kcal")
+            if protein != "N/A":
+                answer_parts.append(f"Protein: {protein}g")
+            if fat != "N/A":
+                answer_parts.append(f"Fat: {fat}g")
+            if carbs != "N/A":
+                answer_parts.append(f"Carbohydrates: {carbs}g")
+            if fiber != "N/A" and fiber != 0.0:
+                answer_parts.append(f"Fiber: {fiber}g")
+            
+            # Add key vitamins/minerals if present
+            vitamin_c = row.get("Vitamin C", 0)
+            calcium = row.get("Calcium", 0)
+            iron = row.get("Iron", 0)
+            
+            if vitamin_c and vitamin_c > 0:
+                answer_parts.append(f"Vitamin C: {vitamin_c}mg")
+            if calcium and calcium > 0:
+                answer_parts.append(f"Calcium: {calcium}mg")
+            if iron and iron > 0:
+                answer_parts.append(f"Iron: {iron}mg")
+            
+            answer = f"{food_name} contains: " + ", ".join(answer_parts[:6])  # Limit to avoid too long responses
+            
             conversation = [
-                {"role": "user", "content": row["sentence"]},
-                {"role": "assistant", "content": row[translation_column]}
+                {"role": "user", "content": question},
+                {"role": "assistant", "content": answer}
             ]
             conversations.append({"messages": conversation})
         
@@ -110,7 +149,7 @@ def data_transformation_component(
         raw_df = load_dataset_from_gcs(input_gcs_path)
         
         # Step 2: Format to conversational format
-        conversations = format_to_conversational(raw_df, use_extra_translation)
+        conversations = format_to_conversational(raw_df)
         
         # Step 3: Convert to Hugging Face Dataset
         logger.info("Converting conversations to Hugging Face Dataset")

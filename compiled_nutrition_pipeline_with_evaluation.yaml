@@ -1,0 +1,1070 @@
+# PIPELINE DEFINITION
+# Name: nutrition-assistant-training-pipeline
+# Description: Pipeline to preprocess nutrition data, fine-tune Phi-3 with LoRA, generate predictions, and evaluate results
+# Inputs:
+#    gradient_accumulation_steps: int [Default: 4.0]
+#    input_gcs_path: str [Default: 'gs://llmops_101_europ/20-10-2025-08:28:00 - FOOD/COMBINED_FOOD_DATASET.csv']
+#    learning_rate: float [Default: 0.0002]
+#    lora_alpha: int [Default: 32.0]
+#    lora_r: int [Default: 16.0]
+#    max_new_tokens: int [Default: 50.0]
+#    model_name: str [Default: 'microsoft/Phi-3-mini-4k-instruct']
+#    num_inference_samples: int [Default: -1.0]
+#    num_train_epochs: int [Default: 1.0]
+#    output_gcs_bucket: str [Default: 'llmops_101_europ']
+#    per_device_train_batch_size: int [Default: 1.0]
+#    random_state: int [Default: 42.0]
+#    temperature: float [Default: 0.7]
+#    test_size: float [Default: 0.2]
+components:
+  comp-data-transformation-component:
+    executorLabel: exec-data-transformation-component
+    inputDefinitions:
+      parameters:
+        input_gcs_path:
+          description: GCS path to input CSV file (gs://bucket/path/file.csv)
+          parameterType: STRING
+        output_gcs_bucket:
+          description: GCS bucket name for output files
+          parameterType: STRING
+        random_state:
+          defaultValue: 42.0
+          description: 'Random seed for reproducibility (default: 42)'
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        test_size:
+          defaultValue: 0.2
+          description: 'Proportion of test set (default: 0.2)'
+          isOptional: true
+          parameterType: NUMBER_DOUBLE
+    outputDefinitions:
+      parameters:
+        test_examples:
+          parameterType: NUMBER_INTEGER
+        test_output_path:
+          parameterType: STRING
+        train_examples:
+          parameterType: NUMBER_INTEGER
+        train_output_path:
+          parameterType: STRING
+  comp-evaluation-component:
+    executorLabel: exec-evaluation-component
+    inputDefinitions:
+      artifacts:
+        predictions:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+          description: Input dataset with predictions CSV file
+    outputDefinitions:
+      artifacts:
+        aggregated_metrics:
+          artifactType:
+            schemaTitle: system.Metrics
+            schemaVersion: 0.0.1
+        evaluation_results:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+  comp-fine-tuning-component:
+    executorLabel: exec-fine-tuning-component
+    inputDefinitions:
+      parameters:
+        eval_split_ratio:
+          defaultValue: 0.2
+          description: Ratio to split train data for evaluation
+          isOptional: true
+          parameterType: NUMBER_DOUBLE
+        eval_steps:
+          defaultValue: 50.0
+          description: Steps between evaluations
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        gradient_accumulation_steps:
+          defaultValue: 4.0
+          description: Gradient accumulation steps
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        learning_rate:
+          defaultValue: 0.0002
+          description: Learning rate for training
+          isOptional: true
+          parameterType: NUMBER_DOUBLE
+        logging_steps:
+          defaultValue: 10.0
+          description: Steps between logging
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        lora_alpha:
+          defaultValue: 32.0
+          description: LoRA alpha parameter
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        lora_dropout:
+          defaultValue: 0.1
+          description: LoRA dropout rate
+          isOptional: true
+          parameterType: NUMBER_DOUBLE
+        lora_r:
+          defaultValue: 16.0
+          description: LoRA rank parameter
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        max_seq_length:
+          defaultValue: 512.0
+          description: Maximum sequence length for training
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        model_name:
+          defaultValue: microsoft/Phi-3-mini-4k-instruct
+          description: Hugging Face model name/path
+          isOptional: true
+          parameterType: STRING
+        num_train_epochs:
+          defaultValue: 1.0
+          description: Number of training epochs
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        per_device_eval_batch_size:
+          defaultValue: 1.0
+          description: Batch size per device for evaluation
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        per_device_train_batch_size:
+          defaultValue: 1.0
+          description: Batch size per device for training
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        save_steps:
+          defaultValue: 100.0
+          description: Steps between model saves
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        train_dataset:
+          description: Path to training dataset in JSON format
+          parameterType: STRING
+        warmup_steps:
+          defaultValue: 100.0
+          description: Warmup steps for learning rate scheduler
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+    outputDefinitions:
+      parameters:
+        final_eval_loss:
+          parameterType: NUMBER_DOUBLE
+        final_train_loss:
+          parameterType: NUMBER_DOUBLE
+        metrics_output_path:
+          parameterType: STRING
+        model_output_path:
+          parameterType: STRING
+        total_params:
+          parameterType: NUMBER_INTEGER
+        trainable_params:
+          parameterType: NUMBER_INTEGER
+  comp-inference-component:
+    executorLabel: exec-inference-component
+    inputDefinitions:
+      parameters:
+        max_new_tokens:
+          defaultValue: 50.0
+          description: Maximum tokens to generate
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        model_path:
+          description: Path to fine-tuned model directory
+          parameterType: STRING
+        num_samples:
+          defaultValue: -1.0
+          description: Number of samples to process (-1 for all)
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        temperature:
+          defaultValue: 0.7
+          description: Sampling temperature
+          isOptional: true
+          parameterType: NUMBER_DOUBLE
+        test_dataset_path:
+          parameterType: STRING
+        top_p:
+          defaultValue: 0.9
+          description: Top-p sampling parameter
+          isOptional: true
+          parameterType: NUMBER_DOUBLE
+    outputDefinitions:
+      artifacts:
+        predictions_output_path:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        avg_response_length:
+          parameterType: NUMBER_DOUBLE
+        num_predictions:
+          parameterType: NUMBER_INTEGER
+defaultPipelineRoot: gs://llmops_101_europ/pipeline_runs
+deploymentSpec:
+  executors:
+    exec-data-transformation-component:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - data_transformation_component
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'pandas==2.3.3'\
+          \ 'datasets==4.2.0' 'gcsfs==2025.9.0' 'google-cloud-storage==2.19.0' 'python-dotenv==1.1.1'\
+          \  &&  python3 -m pip install --quiet --no-warn-script-location 'kfp==2.14.6'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef data_transformation_component(\n    input_gcs_path: str,\n  \
+          \  output_gcs_bucket: str,\n    train_output_path: OutputPath(str),\n  \
+          \  test_output_path: OutputPath(str),\n    test_size: float = 0.2,\n   \
+          \ random_state: int = 42\n) -> NamedTuple(\"DataTransformationOutput\",\
+          \ [(\"train_examples\", int), (\"test_examples\", int)]):\n    \"\"\"\n\
+          \    Data transformation component for nutrition dataset.\n\n    Args:\n\
+          \        input_gcs_path (str): GCS path to input CSV file (gs://bucket/path/file.csv)\n\
+          \        output_gcs_bucket (str): GCS bucket name for output files\n   \
+          \     train_output_path (OutputPath): Path for training dataset output\n\
+          \        test_output_path (OutputPath): Path for test dataset output\n \
+          \       test_size (float): Proportion of test set (default: 0.2)\n     \
+          \   random_state (int): Random seed for reproducibility (default: 42)\n\n\
+          \    Returns:\n        NamedTuple: Contains train_examples and test_examples\
+          \ counts\n    \"\"\"\n    import os\n    import pandas as pd\n    import\
+          \ datasets\n    import logging\n    from google.cloud import storage\n \
+          \   import json\n    from typing import List, Dict, Any\n\n    # Set up\
+          \ logging\n    logging.basicConfig(level=logging.INFO, format='%(asctime)s\
+          \ - %(levelname)s - %(message)s')\n    logger = logging.getLogger(__name__)\n\
+          \n    logger.info(\"Starting data transformation component\")\n    logger.info(f\"\
+          Input GCS path: {input_gcs_path}\")\n    logger.info(f\"Output GCS bucket:\
+          \ {output_gcs_bucket}\")\n    logger.info(f\"Test size: {test_size}\")\n\
+          \    logger.info(f\"Random state: {random_state}\")\n\n    def load_dataset_from_gcs(gcs_path:\
+          \ str) -> pd.DataFrame:\n        \"\"\"Load dataset from GCS.\"\"\"\n  \
+          \      logger.info(f\"Loading dataset from {gcs_path}\")\n        try:\n\
+          \            df = pd.read_csv(gcs_path)\n            logger.info(f\"Successfully\
+          \ loaded dataset with {len(df)} rows and {len(df.columns)} columns\")\n\
+          \            logger.info(f\"Columns: {list(df.columns)}\")\n           \
+          \ return df\n        except Exception as e:\n            logger.error(f\"\
+          Failed to load dataset from GCS: {str(e)}\")\n            raise\n\n    def\
+          \ format_to_conversational(df: pd.DataFrame) -> List[Dict[str, Any]]:\n\
+          \        \"\"\"Convert nutrition data to conversational format.\"\"\"\n\
+          \        logger.info(f\"Converting {len(df)} rows to conversational format\"\
+          )\n\n        conversations = []\n\n        for _, row in df.iterrows():\n\
+          \            food_name = row[\"food\"]\n            calories = row.get(\"\
+          Caloric Value\", \"N/A\")\n            protein = row.get(\"Protein\", \"\
+          N/A\")\n            fat = row.get(\"Fat\", \"N/A\")\n            carbs =\
+          \ row.get(\"Carbohydrates\", \"N/A\")\n            fiber = row.get(\"Dietary\
+          \ Fiber\", \"N/A\")\n\n            # Create different types of questions\
+          \ for variety\n            import random\n            question_types = [\n\
+          \                f\"What are the nutritional values for {food_name}?\",\n\
+          \                f\"Tell me about the macros in {food_name}\",\n       \
+          \         f\"How many calories are in {food_name}?\",\n                f\"\
+          What is the protein content of {food_name}?\",\n                f\"Give\
+          \ me the nutritional breakdown of {food_name}\",\n                f\"What\
+          \ are the calories and macros for {food_name}?\"\n            ]\n\n    \
+          \        question = random.choice(question_types)\n\n            # Create\
+          \ a comprehensive answer\n            answer_parts = []\n            if\
+          \ calories != \"N/A\":\n                answer_parts.append(f\"Calories:\
+          \ {calories} kcal\")\n            if protein != \"N/A\":\n             \
+          \   answer_parts.append(f\"Protein: {protein}g\")\n            if fat !=\
+          \ \"N/A\":\n                answer_parts.append(f\"Fat: {fat}g\")\n    \
+          \        if carbs != \"N/A\":\n                answer_parts.append(f\"Carbohydrates:\
+          \ {carbs}g\")\n            if fiber != \"N/A\" and fiber != 0.0:\n     \
+          \           answer_parts.append(f\"Fiber: {fiber}g\")\n\n            # Add\
+          \ key vitamins/minerals if present\n            vitamin_c = row.get(\"Vitamin\
+          \ C\", 0)\n            calcium = row.get(\"Calcium\", 0)\n            iron\
+          \ = row.get(\"Iron\", 0)\n\n            if vitamin_c and vitamin_c > 0:\n\
+          \                answer_parts.append(f\"Vitamin C: {vitamin_c}mg\")\n  \
+          \          if calcium and calcium > 0:\n                answer_parts.append(f\"\
+          Calcium: {calcium}mg\")\n            if iron and iron > 0:\n           \
+          \     answer_parts.append(f\"Iron: {iron}mg\")\n\n            answer = f\"\
+          {food_name} contains: \" + \", \".join(answer_parts[:6])  # Limit to avoid\
+          \ too long responses\n\n            conversation = [\n                {\"\
+          role\": \"user\", \"content\": question},\n                {\"role\": \"\
+          assistant\", \"content\": answer}\n            ]\n            conversations.append({\"\
+          messages\": conversation})\n\n        logger.info(f\"Successfully created\
+          \ {len(conversations)} conversations\")\n        return conversations\n\n\
+          \    def upload_to_gcs(local_path: str, bucket_name: str, blob_name: str):\n\
+          \        \"\"\"Upload file to GCS.\"\"\"\n        logger.info(f\"Uploading\
+          \ {local_path} to gs://{bucket_name}/{blob_name}\")\n        try:\n    \
+          \        client = storage.Client()\n            bucket = client.bucket(bucket_name)\n\
+          \            blob = bucket.blob(blob_name)\n            blob.upload_from_filename(local_path)\n\
+          \            logger.info(f\"Successfully uploaded to gs://{bucket_name}/{blob_name}\"\
+          )\n        except Exception as e:\n            logger.error(f\"Failed to\
+          \ upload to GCS: {str(e)}\")\n            raise\n\n    try:\n        # Step\
+          \ 1: Load dataset from GCS\n        raw_df = load_dataset_from_gcs(input_gcs_path)\n\
+          \n        # Step 2: Format to conversational format\n        conversations\
+          \ = format_to_conversational(raw_df)\n\n        # Step 3: Convert to Hugging\
+          \ Face Dataset\n        logger.info(\"Converting conversations to Hugging\
+          \ Face Dataset\")\n        df_conversations = pd.DataFrame(conversations)\n\
+          \        hf_dataset = datasets.Dataset.from_pandas(df_conversations)\n \
+          \       logger.info(f\"Created Hugging Face dataset with {len(hf_dataset)}\
+          \ examples\")\n\n        # Step 4: Split into train/test\n        logger.info(f\"\
+          Splitting dataset with test_size={test_size}, random_state={random_state}\"\
+          )\n        split_dataset = hf_dataset.train_test_split(test_size=test_size,\
+          \ seed=random_state)\n        train_dataset = split_dataset[\"train\"]\n\
+          \        test_dataset = split_dataset[\"test\"]\n\n        logger.info(f\"\
+          Train set: {len(train_dataset)} examples\")\n        logger.info(f\"Test\
+          \ set: {len(test_dataset)} examples\")\n\n        # Step 5: Save datasets\
+          \ locally (as JSON)\n        logger.info(\"Saving datasets locally\")\n\n\
+          \        # Create temporary local files\n        import tempfile\n     \
+          \   with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)\
+          \ as f:\n            temp_train_path = f.name\n        with tempfile.NamedTemporaryFile(mode='w',\
+          \ suffix='.json', delete=False) as f:\n            temp_test_path = f.name\n\
+          \n        # Save as JSON\n        train_dataset.to_json(temp_train_path)\n\
+          \        test_dataset.to_json(temp_test_path)\n\n        # Step 6: Copy\
+          \ to output paths (for Kubeflow)\n        import shutil\n        shutil.copy2(temp_train_path,\
+          \ train_output_path)\n        shutil.copy2(temp_test_path, test_output_path)\n\
+          \n        logger.info(f\"Saved train dataset to: {train_output_path}\")\n\
+          \        logger.info(f\"Saved test dataset to: {test_output_path}\")\n\n\
+          \        # Step 7: Upload to GCS bucket\n        timestamp = pd.Timestamp.now().strftime(\"\
+          %Y-%m-%d-%H:%M:%S\")\n        train_gcs_name = f\"processed_data/{timestamp}/train_dataset.json\"\
+          \n        test_gcs_name = f\"processed_data/{timestamp}/test_dataset.json\"\
+          \n\n        upload_to_gcs(temp_train_path, output_gcs_bucket, train_gcs_name)\n\
+          \        upload_to_gcs(temp_test_path, output_gcs_bucket, test_gcs_name)\n\
+          \n        # Clean up temporary files\n        os.unlink(temp_train_path)\n\
+          \        os.unlink(temp_test_path)\n\n        logger.info(\"\u2705 Data\
+          \ transformation completed successfully!\")\n\n        # Return the output\
+          \ tuple\n        from collections import namedtuple\n        DataTransformationOutput\
+          \ = namedtuple(\"DataTransformationOutput\", [\"train_examples\", \"test_examples\"\
+          ])\n        return DataTransformationOutput(train_examples=len(train_dataset),\
+          \ test_examples=len(test_dataset))\n\n    except Exception as e:\n     \
+          \   logger.error(f\"\u274C Data transformation failed: {str(e)}\")\n   \
+          \     raise\n\n"
+        image: python:3.11-slim
+        resources:
+          cpuLimit: 2.0
+          cpuRequest: 1.0
+          memoryLimit: 4.294967296
+          memoryRequest: 2.147483648
+          resourceCpuLimit: '2'
+          resourceCpuRequest: '1'
+          resourceMemoryLimit: 4Gi
+          resourceMemoryRequest: 2Gi
+    exec-evaluation-component:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - evaluation_component
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'pandas==2.3.3'\
+          \ 'numpy==1.24.3' 'ragas==0.3.7' 'rouge-score==0.1.2' 'sacrebleu==2.4.3'\
+          \ 'google-cloud-storage==2.10.0'  &&  python3 -m pip install --quiet --no-warn-script-location\
+          \ 'kfp==2.14.6' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"\
+          3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef evaluation_component(\n    predictions: Input[Dataset],\n   \
+          \ evaluation_results: Output[Dataset],\n    aggregated_metrics: Output[Metrics]\n\
+          ):\n    \"\"\"\n    Evaluate model predictions using ragas metrics.\n\n\
+          \    Args:\n        predictions: Input dataset with predictions CSV file\n\
+          \        evaluation_results: Output dataset for per-sample metric scores\
+          \ CSV\n        aggregated_metrics: Output metrics artifact for aggregated\
+          \ statistics\n    \"\"\"\n    import pandas as pd\n    import numpy as np\n\
+          \    import json\n    from pathlib import Path\n    from typing import Dict,\
+          \ List, Any\n    import logging\n\n    # Configure logging\n    logging.basicConfig(level=logging.INFO)\n\
+          \    logger = logging.getLogger(__name__)\n\n    try:\n        # Import\
+          \ ragas components\n        from ragas.metrics import (\n            RougeScore,\n\
+          \            BleuScore, \n            ExactMatch,\n        )\n        from\
+          \ ragas import SingleTurnSample\n\n        logger.info(\"\u2705 Successfully\
+          \ imported ragas components\")\n\n        # Define evaluation metrics\n\
+          \        EVALUATION_METRICS = [\n            ExactMatch(),\n           \
+          \ RougeScore(),\n            BleuScore(),\n        ]\n\n        logger.info(f\"\
+          \U0001F3AF Defined {len(EVALUATION_METRICS)} metrics for evaluation\")\n\
+          \n        def compute_metrics(row: pd.Series, metrics: List) -> Dict[str,\
+          \ float]:\n            \"\"\"\n            Compute metrics for a single\
+          \ prediction row.\n\n            Args:\n                row: A pandas Series\
+          \ with columns 'user_input', 'reference', 'extracted_response'\n       \
+          \         metrics: List of ragas metric objects\n\n            Returns:\n\
+          \                Dictionary with metric names as keys and scores as values\n\
+          \            \"\"\"\n            try:\n                # Create SingleTurnSample\
+          \ object\n                sample = SingleTurnSample(\n                 \
+          \   user_input=row['user_input'],\n                    response=row['extracted_response'],\n\
+          \                    reference=row['reference']\n                )\n\n \
+          \               logger.info(f\"\U0001F4DD Computing metrics for: '{row['user_input'][:50]}...'\"\
+          )\n\n                # Compute each metric\n                results = {}\n\
+          \                for metric in metrics:\n                    try:\n    \
+          \                    # Get metric name\n                        metric_name\
+          \ = metric.__class__.__name__\n\n                        # Compute score\n\
+          \                        score = metric.single_turn_score(sample)\n    \
+          \                    results[metric_name] = score\n\n                  \
+          \      logger.info(f\"  \u2705 {metric_name}: {score:.4f}\")\n\n       \
+          \             except Exception as e:\n                        logger.error(f\"\
+          \  \u274C {metric.__class__.__name__} failed: {e}\")\n                 \
+          \       results[metric.__class__.__name__] = 0.0\n\n                return\
+          \ results\n\n            except Exception as e:\n                logger.error(f\"\
+          \u274C Error computing metrics: {e}\")\n                # Return default\
+          \ scores\n                return {metric.__class__.__name__: 0.0 for metric\
+          \ in metrics}\n\n        def aggregate_metrics(df_metrics: pd.DataFrame,\
+          \ metric_columns: List[str]) -> Dict[str, Dict[str, float]]:\n         \
+          \   \"\"\"\n            Compute aggregated metrics from per-sample metrics\
+          \ DataFrame.\n\n            Args:\n                df_metrics: DataFrame\
+          \ with per-sample metric scores\n                metric_columns: List of\
+          \ metric column names to aggregate\n\n            Returns:\n           \
+          \     Dictionary with aggregated statistics for each metric\n          \
+          \  \"\"\"\n            aggregated = {}\n\n            for metric in metric_columns:\n\
+          \                if metric in df_metrics.columns:\n                    scores\
+          \ = df_metrics[metric]\n\n                    aggregated[metric] = {\n \
+          \                       'mean': float(scores.mean()),\n                \
+          \        'std': float(scores.std()),\n                        'min': float(scores.min()),\n\
+          \                        'max': float(scores.max()),\n                 \
+          \       'median': float(scores.median()),\n                        'count':\
+          \ int(len(scores))\n                    }\n                else:\n     \
+          \               logger.warning(f\"\u26A0\uFE0F Metric '{metric}' not found\
+          \ in DataFrame\")\n\n            return aggregated\n\n        # Load predictions\
+          \ data\n        logger.info(\"\U0001F4C2 Loading predictions data...\")\n\
+          \        df_predictions = pd.read_csv(predictions.path)\n\n        logger.info(f\"\
+          \u2705 Loaded {len(df_predictions)} predictions\")\n        logger.info(f\"\
+          Columns: {list(df_predictions.columns)}\")\n\n        # Verify required\
+          \ columns\n        required_cols = ['user_input', 'reference', 'extracted_response']\n\
+          \        missing_cols = [col for col in required_cols if col not in df_predictions.columns]\n\
+          \        if missing_cols:\n            raise ValueError(f\"Missing required\
+          \ columns: {missing_cols}\")\n\n        logger.info(f\"\u2705 All required\
+          \ columns present: {required_cols}\")\n\n        # Process all predictions\
+          \ to compute per-sample metrics\n        logger.info(\"\U0001F504 Computing\
+          \ metrics for all predictions...\")\n        all_results = []\n\n      \
+          \  for idx, row in df_predictions.iterrows():\n            logger.info(f\"\
+          \U0001F4CD Processing sample {idx + 1}/{len(df_predictions)}\")\n      \
+          \      sample_results = compute_metrics(row, EVALUATION_METRICS)\n\n   \
+          \         # Add row identifier and input data\n            sample_results['sample_id']\
+          \ = idx\n            sample_results['user_input'] = row['user_input']\n\
+          \            sample_results['reference'] = row['reference']\n          \
+          \  sample_results['extracted_response'] = row['extracted_response']\n\n\
+          \            all_results.append(sample_results)\n\n        # Create DataFrame\
+          \ with per-sample results\n        df_results = pd.DataFrame(all_results)\n\
+          \        logger.info(f\"\u2705 Processed {len(df_results)} samples\")\n\n\
+          \        # Save per-sample metrics\n        df_results.to_csv(evaluation_results.path,\
+          \ index=False)\n        logger.info(f\"\u2705 Saved per-sample metrics to:\
+          \ {evaluation_results.path}\")\n\n        # Compute aggregated metrics\n\
+          \        metric_names = ['ExactMatch', 'RougeScore', 'BleuScore']\n    \
+          \    aggregated_results = aggregate_metrics(df_results, metric_names)\n\n\
+          \        # Save aggregated metrics (for Kubeflow Metrics artifact)\n   \
+          \     metrics_dict = {}\n        for metric, stats in aggregated_results.items():\n\
+          \            for stat_name, value in stats.items():\n                metrics_dict[f\"\
+          {metric}_{stat_name}\"] = value\n\n        # Write to aggregated_metrics\
+          \ artifact\n        with open(aggregated_metrics.path, 'w') as f:\n    \
+          \        json.dump(metrics_dict, f, indent=2)\n\n        logger.info(f\"\
+          \u2705 Saved aggregated metrics to: {aggregated_metrics.path}\")\n\n   \
+          \     # Log summary\n        logger.info(\"=\"*60)\n        logger.info(\"\
+          \U0001F3AF EVALUATION SUMMARY\")\n        logger.info(\"=\"*60)\n      \
+          \  logger.info(f\"\U0001F4CA Evaluated {len(df_results)} predictions using\
+          \ {len(EVALUATION_METRICS)} metrics\")\n\n        for metric, stats in aggregated_results.items():\n\
+          \            logger.info(f\"\U0001F3C6 {metric}: {stats['mean']:.4f} \xB1\
+          \ {stats['std']:.4f} (mean \xB1 std)\")\n\n        logger.info(\"\u2705\
+          \ Evaluation component completed successfully!\")\n\n    except Exception\
+          \ as e:\n        logger.error(f\"\u274C Evaluation component failed: {e}\"\
+          )\n        raise\n\n"
+        image: cicirello/pyaction:3.11
+        resources:
+          cpuLimit: 4.0
+          cpuRequest: 2.0
+          memoryLimit: 8.0
+          memoryRequest: 4.0
+          resourceCpuLimit: '4'
+          resourceCpuRequest: '2'
+          resourceMemoryLimit: 8G
+          resourceMemoryRequest: 4G
+    exec-fine-tuning-component:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - fine_tuning_component
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'transformers==4.46.3'\
+          \ 'peft==0.13.2' 'trl' 'datasets==4.2.0' 'pandas==2.3.3' 'accelerate' 'bitsandbytes'\
+          \ 'tensorboard' 'google-cloud-storage==2.19.0' 'gcsfs==2025.9.0'  &&  python3\
+          \ -m pip install --quiet --no-warn-script-location 'kfp==2.14.6' '--no-deps'\
+          \ 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"$0\" \"$@\"\
+          \n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef fine_tuning_component(\n    train_dataset: InputPath(str),\n\
+          \    model_output_path: OutputPath(str),\n    metrics_output_path: OutputPath(str),\n\
+          \    model_name: str = \"microsoft/Phi-3-mini-4k-instruct\",\n    max_seq_length:\
+          \ int = 512,\n    learning_rate: float = 2e-4,\n    num_train_epochs: int\
+          \ = 1,\n    per_device_train_batch_size: int = 1,\n    per_device_eval_batch_size:\
+          \ int = 1,\n    gradient_accumulation_steps: int = 4,\n    warmup_steps:\
+          \ int = 100,\n    logging_steps: int = 10,\n    eval_steps: int = 50,\n\
+          \    save_steps: int = 100,\n    lora_r: int = 16,\n    lora_alpha: int\
+          \ = 32,\n    lora_dropout: float = 0.1,\n    eval_split_ratio: float = 0.2\n\
+          ) -> NamedTuple(\"FineTuningOutput\", [\n    (\"total_params\", int), \n\
+          \    (\"trainable_params\", int), \n    (\"final_train_loss\", float),\n\
+          \    (\"final_eval_loss\", float)\n]):\n    \"\"\"\n    Fine-tune Phi-3\
+          \ model using LoRA (Low-Rank Adaptation).\n\n    Args:\n        train_dataset\
+          \ (InputPath): Path to training dataset in JSON format\n        model_output_path\
+          \ (OutputPath): Path to save fine-tuned model\n        metrics_output_path\
+          \ (OutputPath): Path to save training metrics and TensorBoard logs\n   \
+          \     model_name (str): Hugging Face model name/path\n        max_seq_length\
+          \ (int): Maximum sequence length for training\n        learning_rate (float):\
+          \ Learning rate for training\n        num_train_epochs (int): Number of\
+          \ training epochs\n        per_device_train_batch_size (int): Batch size\
+          \ per device for training\n        per_device_eval_batch_size (int): Batch\
+          \ size per device for evaluation\n        gradient_accumulation_steps (int):\
+          \ Gradient accumulation steps\n        warmup_steps (int): Warmup steps\
+          \ for learning rate scheduler\n        logging_steps (int): Steps between\
+          \ logging\n        eval_steps (int): Steps between evaluations\n       \
+          \ save_steps (int): Steps between model saves\n        lora_r (int): LoRA\
+          \ rank parameter\n        lora_alpha (int): LoRA alpha parameter\n     \
+          \   lora_dropout (float): LoRA dropout rate\n        eval_split_ratio (float):\
+          \ Ratio to split train data for evaluation\n\n    Returns:\n        NamedTuple:\
+          \ Training statistics (total_params, trainable_params, final_train_loss,\
+          \ final_eval_loss)\n    \"\"\"\n    import os\n    import json\n    import\
+          \ logging\n    import torch\n    import pandas as pd\n    from datasets\
+          \ import Dataset\n    from transformers import (\n        AutoTokenizer,\
+          \ \n        AutoModelForCausalLM, \n        BitsAndBytesConfig\n    )\n\
+          \    from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training\n\
+          \    from trl import SFTTrainer, SFTConfig\n    from google.cloud import\
+          \ storage\n\n    # Set up logging\n    logging.basicConfig(level=logging.INFO)\n\
+          \    logger = logging.getLogger(__name__)\n\n    logger.info(\"\U0001F680\
+          \ Starting Phi-3 fine-tuning with LoRA\")\n    logger.info(f\"\U0001F4BE\
+          \ CUDA available: {torch.cuda.is_available()}\")\n    if torch.cuda.is_available():\n\
+          \        logger.info(f\"\U0001F3AF Device: {torch.cuda.get_device_name()}\"\
+          )\n        logger.info(f\"\U0001F4BE CUDA memory: {torch.cuda.get_device_properties(0).total_memory\
+          \ / 1e9:.1f} GB\")\n\n    # Define hyperparameters\n    hyperparameters\
+          \ = {\n        \"model_name\": model_name,\n        \"max_seq_length\":\
+          \ max_seq_length,\n        \"learning_rate\": learning_rate,\n        \"\
+          num_train_epochs\": num_train_epochs,\n        \"per_device_train_batch_size\"\
+          : per_device_train_batch_size,\n        \"per_device_eval_batch_size\":\
+          \ per_device_eval_batch_size,\n        \"gradient_accumulation_steps\":\
+          \ gradient_accumulation_steps,\n        \"warmup_steps\": warmup_steps,\n\
+          \        \"logging_steps\": logging_steps,\n        \"eval_steps\": eval_steps,\n\
+          \        \"save_steps\": save_steps,\n        \"lora_r\": lora_r,\n    \
+          \    \"lora_alpha\": lora_alpha,\n        \"lora_dropout\": lora_dropout,\n\
+          \        \"target_modules\": [\"q_proj\", \"k_proj\", \"v_proj\", \"o_proj\"\
+          ],\n    }\n\n    logger.info(\"\U0001F4CB Hyperparameters:\")\n    for key,\
+          \ value in hyperparameters.items():\n        logger.info(f\"  {key}: {value}\"\
+          )\n\n    # LoRA Configuration\n    lora_config = LoraConfig(\n        r=hyperparameters[\"\
+          lora_r\"],\n        lora_alpha=hyperparameters[\"lora_alpha\"], \n     \
+          \   target_modules=hyperparameters[\"target_modules\"],\n        lora_dropout=hyperparameters[\"\
+          lora_dropout\"],\n        bias=\"none\",\n        task_type=\"CAUSAL_LM\"\
+          \n    )\n\n    logger.info(f\"\u2705 LoRA Config created:\")\n    logger.info(f\"\
+          \  Rank (r): {lora_config.r}\")\n    logger.info(f\"  Alpha: {lora_config.lora_alpha}\"\
+          )\n    logger.info(f\"  Target modules: {lora_config.target_modules}\")\n\
+          \n    # BitsAndBytes Configuration for 4-bit quantization\n    bnb_config\
+          \ = BitsAndBytesConfig(\n        load_in_4bit=True,\n        bnb_4bit_quant_type=\"\
+          nf4\",\n        bnb_4bit_compute_dtype=torch.float16,\n        bnb_4bit_use_double_quant=True\n\
+          \    )\n    logger.info(\"\u2705 BitsAndBytes Config created (4-bit quantization\
+          \ enabled)\")\n\n    # Load tokenizer\n    logger.info(f\"\U0001F504 Loading\
+          \ tokenizer: {model_name}\")\n    tokenizer = AutoTokenizer.from_pretrained(\n\
+          \        model_name,\n        trust_remote_code=True\n    )\n\n    # Ensure\
+          \ the tokenizer has a pad token\n    if tokenizer.pad_token is None:\n \
+          \       tokenizer.pad_token = tokenizer.eos_token\n        logger.info(\"\
+          \  \u2795 Added pad token\")\n\n    logger.info(f\"\u2705 Tokenizer loaded:\"\
+          )\n    logger.info(f\"  Vocab size: {tokenizer.vocab_size}\")\n    logger.info(f\"\
+          \  Pad token: {tokenizer.pad_token}\")\n\n    # Load model with quantization\n\
+          \    logger.info(f\"\U0001F504 Loading model: {model_name}\")\n    model\
+          \ = AutoModelForCausalLM.from_pretrained(\n        model_name,\n       \
+          \ quantization_config=bnb_config,\n        device_map=\"auto\",\n      \
+          \  trust_remote_code=True,\n        torch_dtype=torch.float16,\n    )\n\n\
+          \    logger.info(f\"\u2705 Model loaded:\")\n    logger.info(f\"  Model\
+          \ type: {type(model).__name__}\")\n    logger.info(f\"  Device: {next(model.parameters()).device}\"\
+          )\n    logger.info(f\"  Data type: {next(model.parameters()).dtype}\")\n\
+          \n    # Count parameters before LoRA\n    total_params = sum(p.numel() for\
+          \ p in model.parameters())\n    trainable_params_before = sum(p.numel()\
+          \ for p in model.parameters() if p.requires_grad)\n\n    logger.info(f\"\
+          \U0001F4CA Parameters before LoRA:\")\n    logger.info(f\"  Total parameters:\
+          \ {total_params:,}\")\n    logger.info(f\"  Trainable parameters: {trainable_params_before:,}\"\
+          )\n\n    # Prepare model for training and apply LoRA\n    model = prepare_model_for_kbit_training(model)\n\
+          \    model = get_peft_model(model, lora_config)\n\n    # Count parameters\
+          \ after LoRA\n    total_params_lora = sum(p.numel() for p in model.parameters())\n\
+          \    trainable_params_lora = sum(p.numel() for p in model.parameters() if\
+          \ p.requires_grad)\n\n    logger.info(f\"\U0001F4CA Parameters after LoRA:\"\
+          )\n    logger.info(f\"  Total parameters: {total_params_lora:,}\")\n   \
+          \ logger.info(f\"  Trainable parameters: {trainable_params_lora:,}\")\n\
+          \    logger.info(f\"  Trainable %: {100 * trainable_params_lora / total_params_lora:.2f}%\"\
+          )\n    logger.info(f\"  \U0001F3AF Parameter reduction: {100 * (1 - trainable_params_lora\
+          \ / total_params):.2f}%\")\n\n    # Print LoRA adapters info\n    model.print_trainable_parameters()\n\
+          \n    # Load training dataset\n    logger.info(f\"\U0001F4C2 Loading training\
+          \ dataset from: {train_dataset}\")\n    with open(train_dataset, 'r') as\
+          \ f:\n        raw_data = [json.loads(line) for line in f]\n\n    # Convert\
+          \ to Dataset\n    df = pd.DataFrame(raw_data)\n    dataset = Dataset.from_pandas(df)\n\
+          \n    logger.info(f\"\u2705 Dataset loaded successfully:\")\n    logger.info(f\"\
+          \  Number of examples: {len(dataset)}\")\n    logger.info(f\"  Features:\
+          \ {dataset.features}\")\n\n    # Split the dataset for training and validation\n\
+          \    logger.info(f\"\U0001F500 Splitting dataset (eval_split_ratio={eval_split_ratio})\"\
+          )\n    split_dataset = dataset.train_test_split(test_size=eval_split_ratio,\
+          \ seed=42)\n    train_ds = split_dataset[\"train\"]\n    eval_ds = split_dataset[\"\
+          test\"]\n\n    logger.info(f\"\u2705 Dataset split completed:\")\n    logger.info(f\"\
+          \  Training examples: {len(train_ds)}\")\n    logger.info(f\"  Validation\
+          \ examples: {len(eval_ds)}\")\n\n    # Create output directories\n    os.makedirs(model_output_path,\
+          \ exist_ok=True)\n    os.makedirs(metrics_output_path, exist_ok=True)\n\n\
+          \    # Training Configuration with TensorBoard logging\n    training_args\
+          \ = SFTConfig(\n        output_dir=model_output_path,\n        num_train_epochs=num_train_epochs,\n\
+          \        per_device_train_batch_size=per_device_train_batch_size,\n    \
+          \    per_device_eval_batch_size=per_device_eval_batch_size,\n        gradient_accumulation_steps=gradient_accumulation_steps,\n\
+          \        learning_rate=learning_rate,\n        warmup_steps=warmup_steps,\n\
+          \        logging_steps=logging_steps,\n        eval_steps=eval_steps,\n\
+          \        save_steps=save_steps,\n        evaluation_strategy=\"steps\",\n\
+          \        save_strategy=\"steps\",\n        load_best_model_at_end=True,\n\
+          \        metric_for_best_model=\"eval_loss\",\n        greater_is_better=False,\n\
+          \        report_to=[\"tensorboard\"],  # Enable TensorBoard logging\n  \
+          \      logging_dir=metrics_output_path,  # TensorBoard logs to metrics output\n\
+          \        max_seq_length=max_seq_length,\n        remove_unused_columns=False,\n\
+          \        dataloader_drop_last=True,\n    )\n\n    logger.info(f\"\u2705\
+          \ Training Config created:\")\n    logger.info(f\"  Output dir: {training_args.output_dir}\"\
+          )\n    logger.info(f\"  Logging dir: {training_args.logging_dir}\")\n  \
+          \  logger.info(f\"  Max sequence length: {training_args.max_seq_length}\"\
+          )\n\n    # Initialize SFT Trainer\n    logger.info(\"\U0001F3CB\uFE0F Initializing\
+          \ SFT Trainer...\")\n    trainer = SFTTrainer(\n        model=model,\n \
+          \       args=training_args,\n        train_dataset=train_ds,\n        eval_dataset=eval_ds,\n\
+          \        tokenizer=tokenizer,\n        peft_config=lora_config,\n    )\n\
+          \n    logger.info(f\"\u2705 SFT Trainer initialized\")\n    logger.info(f\"\
+          \  Training examples: {len(trainer.train_dataset)}\")\n    logger.info(f\"\
+          \  Evaluation examples: {len(trainer.eval_dataset)}\")\n\n    # Start training\n\
+          \    logger.info(\"\U0001F680 Starting fine-tuning process...\")\n    try:\n\
+          \        trainer.train()\n        logger.info(\"\u2705 Training completed\
+          \ successfully!\")\n\n        # Save the final model\n        trainer.save_model()\n\
+          \        logger.info(f\"\U0001F4BE Model saved to: {model_output_path}\"\
+          )\n\n        # Save hyperparameters and training info\n        training_info\
+          \ = {\n            \"hyperparameters\": hyperparameters,\n            \"\
+          total_params\": total_params_lora,\n            \"trainable_params\": trainable_params_lora,\n\
+          \            \"training_examples\": len(train_ds),\n            \"validation_examples\"\
+          : len(eval_ds),\n            \"model_name\": model_name,\n            \"\
+          lora_config\": {\n                \"r\": lora_config.r,\n              \
+          \  \"alpha\": lora_config.lora_alpha,\n                \"target_modules\"\
+          : lora_config.target_modules,\n                \"dropout\": lora_config.lora_dropout\n\
+          \            }\n        }\n\n        # Save training info to metrics path\n\
+          \        with open(os.path.join(metrics_output_path, \"training_info.json\"\
+          ), 'w') as f:\n            json.dump(training_info, f, indent=2)\n\n   \
+          \     # Extract final metrics\n        final_train_loss = 0.0\n        final_eval_loss\
+          \ = 0.0\n\n        # Get final losses from training history\n        if\
+          \ trainer.state.log_history:\n            # Find the last train and eval\
+          \ losses\n            for log in reversed(trainer.state.log_history):\n\
+          \                if 'train_loss' in log and final_train_loss == 0.0:\n \
+          \                   final_train_loss = log['train_loss']\n             \
+          \   if 'eval_loss' in log and final_eval_loss == 0.0:\n                \
+          \    final_eval_loss = log['eval_loss']\n                if final_train_loss\
+          \ > 0.0 and final_eval_loss > 0.0:\n                    break\n\n      \
+          \  logger.info(f\"\U0001F4CA Final training metrics:\")\n        logger.info(f\"\
+          \  Final train loss: {final_train_loss:.4f}\")\n        logger.info(f\"\
+          \  Final eval loss: {final_eval_loss:.4f}\")\n\n        # Log metrics to\
+          \ Kubeflow\n        from kfp.v2.dsl import Metrics\n\n        # Create metrics\
+          \ artifact\n        metrics = Metrics()\n        metrics.log_metric(\"total_parameters\"\
+          , total_params_lora)\n        metrics.log_metric(\"trainable_parameters\"\
+          , trainable_params_lora)\n        metrics.log_metric(\"trainable_percentage\"\
+          , 100 * trainable_params_lora / total_params_lora)\n        metrics.log_metric(\"\
+          final_train_loss\", final_train_loss)\n        metrics.log_metric(\"final_eval_loss\"\
+          , final_eval_loss)\n        metrics.log_metric(\"training_examples\", len(train_ds))\n\
+          \        metrics.log_metric(\"validation_examples\", len(eval_ds))\n   \
+          \     metrics.log_metric(\"lora_rank\", lora_config.r)\n        metrics.log_metric(\"\
+          lora_alpha\", lora_config.lora_alpha)\n\n        # Log hyperparameters\n\
+          \        for key, value in hyperparameters.items():\n            if isinstance(value,\
+          \ (int, float)):\n                metrics.log_metric(f\"hp_{key}\", value)\n\
+          \n        # Save metrics artifact\n        with open(os.path.join(metrics_output_path,\
+          \ \"metrics.json\"), 'w') as f:\n            json.dump({\n             \
+          \   \"total_parameters\": total_params_lora,\n                \"trainable_parameters\"\
+          : trainable_params_lora,\n                \"trainable_percentage\": 100\
+          \ * trainable_params_lora / total_params_lora,\n                \"final_train_loss\"\
+          : final_train_loss,\n                \"final_eval_loss\": final_eval_loss,\n\
+          \                \"training_examples\": len(train_ds),\n               \
+          \ \"validation_examples\": len(eval_ds),\n                \"lora_rank\"\
+          : lora_config.r,\n                \"lora_alpha\": lora_config.lora_alpha\n\
+          \            }, f, indent=2)\n\n        logger.info(\"\u2705 Fine-tuning\
+          \ component completed successfully!\")\n\n        return (total_params_lora,\
+          \ trainable_params_lora, final_train_loss, final_eval_loss)\n\n    except\
+          \ Exception as e:\n        logger.error(f\"\u274C Training failed: {str(e)}\"\
+          )\n        raise e\n\n"
+        image: pytorch/pytorch:2.8.0-cuda12.9-cudnn9-devel
+        resources:
+          accelerator:
+            count: '1'
+            resourceCount: '1'
+            resourceType: NVIDIA_TESLA_T4
+            type: NVIDIA_TESLA_T4
+          cpuLimit: 16.0
+          cpuRequest: 8.0
+          memoryLimit: 50.0
+          memoryRequest: 25.0
+          resourceCpuLimit: '16'
+          resourceCpuRequest: '8'
+          resourceMemoryLimit: 50G
+          resourceMemoryRequest: 25G
+    exec-inference-component:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - inference_component
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'transformers==4.46.3'\
+          \ 'torch' 'pandas==2.3.3' 'datasets==4.2.0' 'google-cloud-storage==2.19.0'\
+          \ 'gcsfs==2025.9.0'  &&  python3 -m pip install --quiet --no-warn-script-location\
+          \ 'kfp==2.14.6' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"\
+          3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef inference_component(\n    model_path: InputPath(str),\n    test_dataset_path:\
+          \ InputPath(str),\n    predictions_output_path: Output[Dataset],\n    max_new_tokens:\
+          \ int = 50,\n    temperature: float = 0.7,\n    top_p: float = 0.9,\n  \
+          \  num_samples: int = -1  # -1 means process all samples\n) -> NamedTuple(\"\
+          InferenceOutput\", [(\"num_predictions\", int), (\"avg_response_length\"\
+          , float)]):\n    \"\"\"\n    Generate predictions using fine-tuned Phi-3\
+          \ model on test dataset.\n\n    Args:\n        model_path (InputPath): Path\
+          \ to fine-tuned model directory\n        test_dataset (InputPath): Path\
+          \ to test dataset in JSON format\n        predictions_output_path (Output[Dataset]):\
+          \ Dataset artifact for predictions CSV\n        max_new_tokens (int): Maximum\
+          \ tokens to generate\n        temperature (float): Sampling temperature\n\
+          \        top_p (float): Top-p sampling parameter\n        num_samples (int):\
+          \ Number of samples to process (-1 for all)\n\n    Returns:\n        NamedTuple:\
+          \ Statistics about the inference run\n    \"\"\"\n    import os\n    import\
+          \ json\n    import re\n    import logging\n    import pandas as pd\n   \
+          \ import torch\n    from typing import Any\n    from google.cloud import\
+          \ storage\n    from transformers import AutoTokenizer, AutoModelForCausalLM\n\
+          \n    # Set up logging\n    logging.basicConfig(level=logging.INFO)\n  \
+          \  logger = logging.getLogger(__name__)\n\n    logger.info(\"\U0001F680\
+          \ Starting Phi-3 inference component\")\n    logger.info(f\"\U0001F4BE CUDA\
+          \ available: {torch.cuda.is_available()}\")\n    if torch.cuda.is_available():\n\
+          \        logger.info(f\"\U0001F3AF Device: {torch.cuda.get_device_name()}\"\
+          )\n\n    def download_model(model_uri: str, local_dir: str):\n        \"\
+          \"\"Download model from GCS to local directory.\"\"\"\n        logger.info(f\"\
+          \U0001F4E5 Downloading model from: {model_uri}\")\n\n        if not model_uri.startswith(\"\
+          gs://\"):\n            # Assume it's already a local path from the pipeline\n\
+          \            logger.info(f\"\U0001F4C1 Using local model path: {model_uri}\"\
+          )\n            return model_uri\n\n        # Parse GCS URI\n        path_parts\
+          \ = model_uri[5:].split('/', 1)\n        bucket_name = path_parts[0]\n \
+          \       prefix = path_parts[1] if len(path_parts) > 1 else \"\"\n\n    \
+          \    # Initialize GCS client\n        client = storage.Client()\n      \
+          \  bucket = client.bucket(bucket_name)\n\n        # Create local directory\n\
+          \        os.makedirs(local_dir, exist_ok=True)\n\n        # Download all\
+          \ files\n        blobs = bucket.list_blobs(prefix=prefix)\n        downloaded_files\
+          \ = []\n\n        for blob in blobs:\n            if blob.name.endswith('/'):\n\
+          \                continue\n\n            relative_path = blob.name[len(prefix):].lstrip('/')\n\
+          \            if not relative_path:\n                continue\n\n       \
+          \     local_file_path = os.path.join(local_dir, relative_path)\n       \
+          \     os.makedirs(os.path.dirname(local_file_path), exist_ok=True)\n\n \
+          \           blob.download_to_filename(local_file_path)\n            downloaded_files.append(local_file_path)\n\
+          \n        logger.info(f\"\U0001F4E6 Downloaded {len(downloaded_files)} files\"\
+          )\n        return local_dir\n\n    def build_prompt(tokenizer: AutoTokenizer,\
+          \ sentence: str):\n        \"\"\"Build a prompt from a sentence applying\
+          \ the chat template.\"\"\"\n        messages = [{\"role\": \"user\", \"\
+          content\": sentence}]\n        prompt = tokenizer.apply_chat_template(\n\
+          \            messages,\n            tokenize=False,\n            add_generation_prompt=True\n\
+          \        )\n        return prompt\n\n    def generate_response(\n      \
+          \  model: AutoModelForCausalLM,\n        tokenizer: AutoTokenizer,\n   \
+          \     prompt: str,\n        **kwargs: Any,\n    ) -> str:\n        \"\"\"\
+          Generate a response from the model given a prompt.\"\"\"\n        generation_params\
+          \ = {\n            \"max_new_tokens\": max_new_tokens,\n            \"do_sample\"\
+          : True,\n            \"temperature\": temperature,\n            \"top_p\"\
+          : top_p,\n            \"pad_token_id\": tokenizer.eos_token_id,\n      \
+          \      \"eos_token_id\": tokenizer.eos_token_id,\n        }\n        generation_params.update(kwargs)\n\
+          \n        inputs = tokenizer(prompt, return_tensors=\"pt\")\n        device\
+          \ = next(model.parameters()).device\n        inputs = {k: v.to(device) for\
+          \ k, v in inputs.items()}\n\n        with torch.no_grad():\n           \
+          \ outputs = model.generate(**inputs, **generation_params)\n\n        full_output\
+          \ = tokenizer.decode(outputs[0], skip_special_tokens=True)\n        return\
+          \ full_output\n\n    def extract_response(model_output: str) -> str:\n \
+          \       \"\"\"Extract the actual response from the model output.\"\"\"\n\
+          \        pattern = r'<\\|assistant\\|\\>\\s*(.*?)(?:<\\|end\\|\\>|$)'\n\
+          \        match = re.search(pattern, model_output, re.DOTALL)\n\n       \
+          \ if match:\n            return match.group(1).strip()\n        else:\n\
+          \            if '<|assistant|>' in model_output:\n                parts\
+          \ = model_output.split('<|assistant|>')\n                if len(parts) >\
+          \ 1:\n                    response = parts[-1].strip()\n               \
+          \     response = re.sub(r'<\\|end\\|\\>.*$', '', response, flags=re.DOTALL).strip()\n\
+          \                    return response\n\n            logger.warning(\"Could\
+          \ not extract response from model output\")\n            return model_output\n\
+          \n    # Step 1: Load model and tokenizer\n    logger.info(\"\U0001F504 Loading\
+          \ model and tokenizer...\")\n\n    # Download model if it's a GCS URI\n\
+          \    if isinstance(model_path, str) and model_path.startswith(\"gs://\"\
+          ):\n        local_model_dir = \"/tmp/downloaded_model\"\n        model_path\
+          \ = download_model(model_path, local_model_dir)\n\n    # Load tokenizer\n\
+          \    tokenizer = AutoTokenizer.from_pretrained(\n        model_path,\n \
+          \       trust_remote_code=True\n    )\n\n    if tokenizer.pad_token is None:\n\
+          \        tokenizer.pad_token = tokenizer.eos_token\n\n    # Load model\n\
+          \    model = AutoModelForCausalLM.from_pretrained(\n        model_path,\n\
+          \        device_map=\"auto\",\n        trust_remote_code=True,\n       \
+          \ torch_dtype=torch.float16,\n    )\n\n    logger.info(f\"\u2705 Model loaded:\"\
+          )\n    logger.info(f\"  Device: {next(model.parameters()).device}\")\n \
+          \   logger.info(f\"  Data type: {next(model.parameters()).dtype}\")\n\n\
+          \    # Step 2: Load test dataset\n    logger.info(f\"\U0001F4C2 Loading\
+          \ test dataset from: {test_dataset_path}\")\n    with open(test_dataset_path,\
+          \ 'r') as f:\n        test_data = [json.loads(line) for line in f]\n\n \
+          \   logger.info(f\"\u2705 Loaded {len(test_data)} test examples\")\n\n \
+          \   # Extract sentences and references\n    test_sentences = []\n    test_references\
+          \ = []\n\n    for row in test_data:\n        messages = row['messages']\n\
+          \        user_msg = None\n        assistant_msg = None\n\n        for msg\
+          \ in messages:\n            if msg['role'] == 'user':\n                user_msg\
+          \ = msg['content']\n            elif msg['role'] == 'assistant':\n     \
+          \           assistant_msg = msg['content']\n\n        if user_msg and assistant_msg:\n\
+          \            test_sentences.append(user_msg)\n            test_references.append(assistant_msg)\n\
+          \n    # Limit number of samples if specified\n    if num_samples > 0 and\
+          \ num_samples < len(test_sentences):\n        test_sentences = test_sentences[:num_samples]\n\
+          \        test_references = test_references[:num_samples]\n        logger.info(f\"\
+          \U0001F522 Processing {num_samples} samples (limited)\")\n\n    logger.info(f\"\
+          \U0001F4CA Processing {len(test_sentences)} sentence pairs\")\n\n    # Step\
+          \ 3: Generate predictions\n    logger.info(\"\U0001F680 Starting inference...\"\
+          )\n    predictions = []\n    response_lengths = []\n\n    for i, (sentence,\
+          \ reference) in enumerate(zip(test_sentences, test_references)):\n     \
+          \   if i % 10 == 0:\n            logger.info(f\"  Processing {i+1}/{len(test_sentences)}...\"\
+          )\n\n        try:\n            # Build prompt\n            prompt = build_prompt(tokenizer,\
+          \ sentence)\n\n            # Generate response\n            full_output\
+          \ = generate_response(model, tokenizer, prompt)\n\n            # Extract\
+          \ clean response\n            extracted_response = extract_response(full_output)\n\
+          \n            # Store prediction\n            predictions.append({\n   \
+          \             \"user_input\": sentence,\n                \"reference\":\
+          \ reference,\n                \"extracted_response\": extracted_response\n\
+          \            })\n\n            response_lengths.append(len(extracted_response.split()))\n\
+          \n        except Exception as e:\n            logger.error(f\"  \u274C Error\
+          \ processing example {i+1}: {str(e)}\")\n            predictions.append({\n\
+          \                \"user_input\": sentence,\n                \"reference\"\
+          : reference,\n                \"extracted_response\": f\"Error: {str(e)}\"\
+          \n            })\n            response_lengths.append(0)\n\n    # Step 4:\
+          \ Save predictions\n    logger.info(\"\U0001F4BE Saving predictions to CSV...\"\
+          )\n    predictions_df = pd.DataFrame(predictions)\n\n    # Create output\
+          \ directory\n    os.makedirs(os.path.dirname(predictions_output_path.path),\
+          \ exist_ok=True)\n\n    # Save to CSV\n    predictions_df.to_csv(predictions_output_path.path,\
+          \ index=False)\n\n    # Calculate statistics\n    num_predictions = len(predictions)\n\
+          \    avg_response_length = sum(response_lengths) / len(response_lengths)\
+          \ if response_lengths else 0.0\n\n    logger.info(f\"\u2705 Inference completed\
+          \ successfully!\")\n    logger.info(f\"  \U0001F4CA Generated {num_predictions}\
+          \ predictions\")\n    logger.info(f\"  \U0001F4CF Average response length:\
+          \ {avg_response_length:.1f} words\")\n    logger.info(f\"  \U0001F4BE Saved\
+          \ to: {predictions_output_path.path}\")\n\n    # Show sample predictions\n\
+          \    logger.info(f\"\U0001F4CB Sample predictions:\")\n    for i in range(min(3,\
+          \ len(predictions))):\n        pred = predictions[i]\n        logger.info(f\"\
+          \  {i+1}. Input: {pred['user_input'][:50]}...\")\n        logger.info(f\"\
+          \     Output: {pred['extracted_response'][:50]}...\")\n\n    return (num_predictions,\
+          \ avg_response_length)\n\n"
+        image: pytorch/pytorch:2.8.0-cuda12.9-cudnn9-devel
+        resources:
+          accelerator:
+            count: '1'
+            resourceCount: '1'
+            resourceType: NVIDIA_TESLA_T4
+            type: NVIDIA_TESLA_T4
+          cpuLimit: 8.0
+          cpuRequest: 4.0
+          memoryLimit: 32.0
+          memoryRequest: 16.0
+          resourceCpuLimit: '8'
+          resourceCpuRequest: '4'
+          resourceMemoryLimit: 32G
+          resourceMemoryRequest: 16G
+pipelineInfo:
+  description: Pipeline to preprocess nutrition data, fine-tune Phi-3 with LoRA, generate
+    predictions, and evaluate results
+  name: nutrition-assistant-training-pipeline
+root:
+  dag:
+    tasks:
+      data-transformation-component:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-data-transformation-component
+        inputs:
+          parameters:
+            input_gcs_path:
+              componentInputParameter: input_gcs_path
+            output_gcs_bucket:
+              componentInputParameter: output_gcs_bucket
+            random_state:
+              componentInputParameter: random_state
+            test_size:
+              componentInputParameter: test_size
+        taskInfo:
+          name: Data Transformation
+      evaluation-component:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-evaluation-component
+        dependentTasks:
+        - inference-component
+        inputs:
+          artifacts:
+            predictions:
+              taskOutputArtifact:
+                outputArtifactKey: predictions_output_path
+                producerTask: inference-component
+        taskInfo:
+          name: Ragas Evaluation
+      fine-tuning-component:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-fine-tuning-component
+        dependentTasks:
+        - data-transformation-component
+        inputs:
+          parameters:
+            gradient_accumulation_steps:
+              componentInputParameter: gradient_accumulation_steps
+            learning_rate:
+              componentInputParameter: learning_rate
+            lora_alpha:
+              componentInputParameter: lora_alpha
+            lora_r:
+              componentInputParameter: lora_r
+            model_name:
+              componentInputParameter: model_name
+            num_train_epochs:
+              componentInputParameter: num_train_epochs
+            per_device_train_batch_size:
+              componentInputParameter: per_device_train_batch_size
+            train_dataset:
+              taskOutputParameter:
+                outputParameterKey: train_output_path
+                producerTask: data-transformation-component
+        taskInfo:
+          name: Phi-3 Fine-tuning with LoRA
+      inference-component:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-inference-component
+        dependentTasks:
+        - data-transformation-component
+        - fine-tuning-component
+        inputs:
+          parameters:
+            max_new_tokens:
+              componentInputParameter: max_new_tokens
+            model_path:
+              taskOutputParameter:
+                outputParameterKey: model_output_path
+                producerTask: fine-tuning-component
+            num_samples:
+              componentInputParameter: num_inference_samples
+            temperature:
+              componentInputParameter: temperature
+            test_dataset_path:
+              taskOutputParameter:
+                outputParameterKey: test_output_path
+                producerTask: data-transformation-component
+        taskInfo:
+          name: Phi-3 Inference
+  inputDefinitions:
+    parameters:
+      gradient_accumulation_steps:
+        defaultValue: 4.0
+        description: Gradient accumulation steps
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      input_gcs_path:
+        defaultValue: gs://llmops_101_europ/20-10-2025-08:28:00 - FOOD/COMBINED_FOOD_DATASET.csv
+        description: GCS path to input CSV file
+        isOptional: true
+        parameterType: STRING
+      learning_rate:
+        defaultValue: 0.0002
+        description: Learning rate for fine-tuning
+        isOptional: true
+        parameterType: NUMBER_DOUBLE
+      lora_alpha:
+        defaultValue: 32.0
+        description: LoRA alpha parameter
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      lora_r:
+        defaultValue: 16.0
+        description: LoRA rank parameter
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      max_new_tokens:
+        defaultValue: 50.0
+        description: Maximum tokens to generate during inference
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      model_name:
+        defaultValue: microsoft/Phi-3-mini-4k-instruct
+        description: Hugging Face model name for fine-tuning
+        isOptional: true
+        parameterType: STRING
+      num_inference_samples:
+        defaultValue: -1.0
+        description: Number of samples to process in inference (-1 for all)
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      num_train_epochs:
+        defaultValue: 1.0
+        description: Number of training epochs
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      output_gcs_bucket:
+        defaultValue: llmops_101_europ
+        description: GCS bucket name for output files
+        isOptional: true
+        parameterType: STRING
+      per_device_train_batch_size:
+        defaultValue: 1.0
+        description: Batch size per device
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      random_state:
+        defaultValue: 42.0
+        description: 'Random seed for reproducibility (default: 42)'
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      temperature:
+        defaultValue: 0.7
+        description: Sampling temperature for inference
+        isOptional: true
+        parameterType: NUMBER_DOUBLE
+      test_size:
+        defaultValue: 0.2
+        description: 'Proportion of test set (default: 0.2)'
+        isOptional: true
+        parameterType: NUMBER_DOUBLE
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.14.6

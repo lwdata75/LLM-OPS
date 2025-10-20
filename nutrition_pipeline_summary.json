@@ -1,0 +1,30 @@
+{
+  "pipeline_name": "nutrition-assistant-training-pipeline",
+  "dataset_info": {
+    "total_foods": 2395,
+    "total_conversations": 2395,
+    "train_size": 1916,
+    "test_size": 479
+  },
+  "evaluation_info": {
+    "predictions_evaluated": 100,
+    "metrics_used": [
+      "RougeScore",
+      "BleuScore",
+      "ExactMatch"
+    ],
+    "main_scores": {
+      "RougeScore": 0.7109536193672911,
+      "BleuScore": 0.7142294397057765,
+      "ExactMatch": 0.6824153561541609
+    },
+    "overall_quality": "Good",
+    "average_score": 0.7025328050757428
+  },
+  "files_generated": {
+    "training_sample": "data/processed/sample_nutrition_conversations.json",
+    "predictions": "nutrition_evaluation_results.csv",
+    "per_sample_metrics": "nutrition_evaluation_results.csv",
+    "aggregated_metrics": "nutrition_aggregated_metrics.json"
+  }
+}

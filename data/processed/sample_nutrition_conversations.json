@@ -1,0 +1,242 @@
+[
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "Give me the nutritional breakdown of taco flavor tortilla chips"
+      },
+      {
+        "role": "assistant",
+        "content": "taco flavor tortilla chips contains: Calories: 1090 kcal, Protein: 17.9g, Fat: 54.9g, Carbohydrates: 143.2g, Fiber: 12.0g, Vitamin C: 2.0mg"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "Can you analyze oat bran bread toasted nutritionally?"
+      },
+      {
+        "role": "assistant",
+        "content": "oat bran bread toasted contains: Calories: 70 kcal, Protein: 3.1g, Fat: 1.3g, Carbohydrates: 11.8g, Fiber: 1.3g, Calcium: 19.2mg"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "How much fat does sour pickles contain?"
+      },
+      {
+        "role": "assistant",
+        "content": "sour pickles contains: Calories: 17 kcal, Protein: 0.5g, Fat: 0.3g, Carbohydrates: 3.5g, Fiber: 1.9g, Vitamin C: 1.6mg"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "What are the calories and macros for french dressing reduced fat?"
+      },
+      {
+        "role": "assistant",
+        "content": "french dressing reduced fat contains: Calories: 37 kcal, Protein: 0.072g, Fat: 2.2g, Carbohydrates: 4.7g, Fiber: 0.2g"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "What are the nutritional values for olive oil?"
+      },
+      {
+        "role": "assistant",
+        "content": "olive oil contains: Calories: 119 kcal, Fat: 13.5g"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "What's the carb content in lime juice?"
+      },
+      {
+        "role": "assistant",
+        "content": "lime juice contains: Calories: 61 kcal, Protein: 1.0g, Fat: 0.2g, Carbohydrates: 20.4g, Fiber: 1.0g, Vitamin C: 72.6mg"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "Is chestnuts roasted high in protein?"
+      },
+      {
+        "role": "assistant",
+        "content": "chestnuts roasted contains: Calories: 37 kcal, Protein: 0.5g, Fat: 0.3g, Carbohydrates: 7.9g, Fiber: 0.8g, Vitamin C: 3.9mg"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "Is cream cheese low fat high in protein?"
+      },
+      {
+        "role": "assistant",
+        "content": "cream cheese low fat contains: Calories: 30 kcal, Protein: 1.2g, Fat: 2.3g, Carbohydrates: 1.2g, Calcium: 22.2mg"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "How much fat does sweet chilli kettle baked chips contain?"
+      },
+      {
+        "role": "assistant",
+        "content": "sweet chilli kettle baked chips contains: Calories: 99 kcal, Protein: 2.0g, Fat: 2.2g, Carbohydrates: 2.1g"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "What are the nutritional values for vivaldi potatoes sainsburys?"
+      },
+      {
+        "role": "assistant",
+        "content": "vivaldi potatoes sainsburys contains: Calories: 23 kcal, Fat: 0.1g"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "How many calories are in beet greens raw?"
+      },
+      {
+        "role": "assistant",
+        "content": "beet greens raw contains: Calories: 8 kcal, Protein: 0.8g, Fat: 0.078g, Carbohydrates: 1.6g, Fiber: 1.4g, Vitamin C: 11.4mg"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "What is the protein content of spanish peanuts?"
+      },
+      {
+        "role": "assistant",
+        "content": "spanish peanuts contains: Calories: 832 kcal, Protein: 38.2g, Fat: 72.4g, Carbohydrates: 23.1g, Fiber: 13.9g, Calcium: 154.8mg"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "Can you analyze meatless chicken nutritionally?"
+      },
+      {
+        "role": "assistant",
+        "content": "meatless chicken contains: Calories: 376 kcal, Protein: 39.7g, Fat: 21.4g, Carbohydrates: 6.1g, Fiber: 6.0g, Calcium: 58.8mg"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "How much fat does dessert wine sweet contain?"
+      },
+      {
+        "role": "assistant",
+        "content": "dessert wine sweet contains: Calories: 165 kcal, Protein: 0.2g, Carbohydrates: 14.1g"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "What's the carb content in black bean soup?"
+      },
+      {
+        "role": "assistant",
+        "content": "black bean soup contains: Calories: 234 kcal, Protein: 12.4g, Fat: 3.4g, Carbohydrates: 39.6g, Fiber: 17.5g, Calcium: 90.0mg"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "What's the carb content in pigeon peas cooked?"
+      },
+      {
+        "role": "assistant",
+        "content": "pigeon peas cooked contains: Calories: 203 kcal, Protein: 11.4g, Fat: 0.6g, Carbohydrates: 39.1g, Fiber: 11.3g, Calcium: 72.2mg"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "What's the carb content in black tea?"
+      },
+      {
+        "role": "assistant",
+        "content": "black tea contains: Calories: 2 kcal, Carbohydrates: 0.7g"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "What's the carb content in veal kidneys cooked?"
+      },
+      {
+        "role": "assistant",
+        "content": "veal kidneys cooked contains: Calories: 300 kcal, Protein: 48.4g, Fat: 10.4g, Vitamin C: 14.7mg, Calcium: 53.4mg, Iron: 5.6mg"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "What is the protein content of sweet gefilte fish?"
+      },
+      {
+        "role": "assistant",
+        "content": "sweet gefilte fish contains: Calories: 35 kcal, Protein: 3.8g, Fat: 0.7g, Carbohydrates: 3.1g, Iron: 1.0mg"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "Is chervil dried high in protein?"
+      },
+      {
+        "role": "assistant",
+        "content": "chervil dried contains: Calories: 5 kcal, Protein: 0.4g, Fat: 0.002g, Carbohydrates: 0.9g, Fiber: 0.2g, Calcium: 25.6mg"
+      }
+    ]
+  }
+]

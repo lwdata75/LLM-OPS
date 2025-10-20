@@ -1,6 +1,6 @@
 """
 Pipeline runner script for Vertex AI Pipelines.
-Compiles and submits the Yoda data preprocessing pipeline.
+Compiles and submits the nutrition assistant training pipeline.
 """
 
 import os
@@ -17,7 +17,7 @@ load_dotenv()
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from src.pipelines.model_training_pipeline import yoda_model_training_pipeline
+from src.pipelines.model_training_pipeline import nutrition_assistant_training_pipeline
 
 # Configuration
 PROJECT_ID = os.getenv("GCP_PROJECT_ID")
@@ -26,8 +26,8 @@ BUCKET_NAME = os.getenv("GCP_BUCKET_NAME")
 PIPELINE_ROOT = f"gs://{BUCKET_NAME}/pipeline_runs"
 
 # Pipeline configuration
-PIPELINE_NAME = "yoda-model-training"
-DISPLAY_NAME = "Yoda Model Training Pipeline with Fine-tuning"
+PIPELINE_NAME = "nutrition-assistant-training"
+DISPLAY_NAME = "Nutrition Assistant Training Pipeline with Fine-tuning"
 
 def compile_pipeline():
     """Compile the pipeline to a JSON file."""
@@ -43,7 +43,7 @@ def compile_pipeline():
     # Compile the pipeline
     compiler = Compiler()
     compiler.compile(
-        pipeline_func=yoda_model_training_pipeline,
+        pipeline_func=nutrition_assistant_training_pipeline,
         package_path=compiled_pipeline_path
     )
     
@@ -63,11 +63,10 @@ def submit_pipeline(compiled_pipeline_path: str):
     
     # Define pipeline parameters
     pipeline_parameters = {
-        "input_gcs_path": f"gs://{BUCKET_NAME}/15-10-2025-08:50:00/yoda_sentences.csv",
+        "input_gcs_path": f"gs://{BUCKET_NAME}/20-10-2025-08:28:00 - FOOD/COMBINED_FOOD_DATASET.csv",
         "output_gcs_bucket": BUCKET_NAME,
         "test_size": 0.2,
         "random_state": 42,
-        "use_extra_translation": True,
         # Fine-tuning parameters
         "model_name": "microsoft/Phi-3-mini-4k-instruct",
         "learning_rate": 2e-4,
@@ -110,7 +109,7 @@ def submit_pipeline(compiled_pipeline_path: str):
 def main():
     """Main function to compile and submit the pipeline."""
     print("=" * 60)
-    print("🤖 Yoda Model Training Pipeline Runner")
+    print("🍎 Nutrition Assistant Training Pipeline Runner")
     print("=" * 60)
     
     # Validate environment variables
