@@ -1,42 +1,72 @@
-# Python virtual environment
-.venv/
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
 
 # Environment variables
 .env
 .env.local
 
-# IDE
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# Logs
+*.log
+logs/
+downloaded-logs/
+
 # OS
 .DS_Store
 Thumbs.db
 
-# Project specific
-*.log
-.pytest_cache/
-.coverage
-htmlcov/
+# Model artifacts (local only, not compiled pipelines)
+models/
+*.pth
+*.bin
+*.safetensors
 
-# Data files - Keep nutrition dataset
+# Data - exclude raw, keep processed
+data/raw/
+data/temp/
+
+# TensorBoard
+events.out.tfevents.*
+
+# Chainlit
+.chainlit/
+
+# Large output files (keep structure, not content)
+outputs/pipeline_artifacts/*.json
+outputs/*.csv
+*.csv
 !COMBINED_FOOD_DATASET.csv
-
-# Generated files to keep
-!nutrition_*.json
-!nutrition_*.csv
-!inference_predictions.csv
-!compiled_nutrition_pipeline_with_evaluation.yaml
-!pipeline_artifacts/nutrition-assistant-training_*.json
-
-# Temporary files
-temp_*
-test_*

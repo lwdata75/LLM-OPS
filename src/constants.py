@@ -1,12 +1,10 @@
 """
-Constants module for LLM-OPS project.
-Loads configuration from environment variables.
+Constants and configuration for the LLM OPS pipeline.
 """
-
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+# Load environment variables
 load_dotenv()
 
 # GCP Configuration
@@ -14,49 +12,54 @@ GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID", "aerobic-polygon-460910-v9")
 GCP_REGION = os.getenv("GCP_REGION", "europe-west2")
 GCP_BUCKET_NAME = os.getenv("GCP_BUCKET_NAME", "llmops_101_europ")
 
-# Data paths
-RAW_DATA_GCS_PATH = f"gs://{GCP_BUCKET_NAME}/20-10-2025-08:28:00 - FOOD/COMBINED_FOOD_DATASET.csv"
-PROCESSED_DATA_LOCAL_DIR = "data/processed"
-TRAIN_DATA_FILENAME = "train_dataset.csv"
-TEST_DATA_FILENAME = "test_dataset.csv"
+# GCS Paths
+GCS_BUCKET_URI = f"gs://{GCP_BUCKET_NAME}"
+GCS_PIPELINE_ROOT = f"{GCS_BUCKET_URI}/pipeline_root"
+GCS_DATA_PATH = f"{GCS_BUCKET_URI}/data"
+GCS_MODEL_PATH = f"{GCS_BUCKET_URI}/models"
 
-# Model configuration
-TEST_SIZE = 0.2
-RANDOM_STATE = 42
+# Model Configuration
+MODEL_NAME = "microsoft/Phi-3-mini-4k-instruct"
+PIPELINE_NAME = "nutrition-assistant-training-pipeline"
 
-# Nutrition dataset specific constants
-NUTRITION_COLUMNS = [
-    'food', 'Caloric Value', 'Fat', 'Saturated Fats', 'Carbohydrates', 
-    'Sugars', 'Protein', 'Dietary Fiber', 'Sodium', 'Vitamin C', 
-    'Calcium', 'Iron', 'Nutrition Density'
-]
+# Training Hyperparameters
+TRAINING_CONFIG = {
+    "max_seq_length": 512,
+    "num_train_epochs": 3,
+    "per_device_train_batch_size": 2,
+    "per_device_eval_batch_size": 2,
+    "gradient_accumulation_steps": 4,
+    "learning_rate": 2e-4,
+    "warmup_steps": 100,
+    "logging_steps": 10,
+    "save_steps": 100,
+    "eval_steps": 50,
+}
 
-# Key nutrition metrics for responses
-KEY_MACROS = ['Caloric Value', 'Fat', 'Carbohydrates', 'Protein']
+# LoRA Configuration
+LORA_CONFIG = {
+    "r": 16,
+    "lora_alpha": 32,
+    "lora_dropout": 0.05,
+    "target_modules": ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+    "bias": "none",
+    "task_type": "CAUSAL_LM",
+}
 
-# Validation
-def validate_constants():
-    """Validate that all required constants are set."""
-    missing_vars = []
-    
-    if not GCP_PROJECT_ID:
-        missing_vars.append("GCP_PROJECT_ID")
-    if not GCP_BUCKET_NAME:
-        missing_vars.append("GCP_BUCKET_NAME")
-    
-    if missing_vars:
-        raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
-    
-    return True
+# Quantization Configuration
+QUANTIZATION_CONFIG = {
+    "load_in_4bit": True,
+    "bnb_4bit_compute_dtype": "float16",
+    "bnb_4bit_quant_type": "nf4",
+    "bnb_4bit_use_double_quant": True,
+}
 
-if __name__ == "__main__":
-    # Test the constants when running directly
-    try:
-        validate_constants()
-        print("✅ All constants loaded successfully!")
-        print(f"   Project ID: {GCP_PROJECT_ID}")
-        print(f"   Region: {GCP_REGION}")
-        print(f"   Bucket: {GCP_BUCKET_NAME}")
-        print(f"   Raw data path: {RAW_DATA_GCS_PATH}")
-    except ValueError as e:
-        print(f"❌ {e}")
+# Data Configuration
+TRAIN_TEST_SPLIT = 0.8
+EVAL_SPLIT = 0.1  # From training data
+MAX_INFERENCE_SAMPLES = 100  # For evaluation
+
+# Docker Images
+BASE_PYTHON_IMAGE = "python:3.11-slim"
+PYTORCH_GPU_IMAGE = "pytorch/pytorch:2.5.0-cuda12.4-cudnn9-devel"
+GIT_PYTHON_IMAGE = "cicirello/pyaction:3.11"

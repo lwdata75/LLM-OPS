@@ -1,155 +1,161 @@
 """
-Pipeline runner script for Vertex AI Pipelines.
-Compiles and submits the nutrition assistant training pipeline.
+Pipeline runner script to compile and submit the pipeline to Vertex AI.
 """
-
-import os
 import sys
-from datetime import datetime
-from dotenv import load_dotenv
+import os
+from pathlib import Path
+
+# Add project root to path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
 from google.cloud import aiplatform
-from kfp.compiler import Compiler
+from kfp import compiler
+import logging
+from datetime import datetime
 
-# Load environment variables
-load_dotenv()
+from src.constants import (
+    GCP_PROJECT_ID,
+    GCP_REGION,
+    GCS_PIPELINE_ROOT,
+    GCS_BUCKET_URI,
+    MODEL_NAME,
+    PIPELINE_NAME,
+    TRAINING_CONFIG,
+    LORA_CONFIG,
+    QUANTIZATION_CONFIG,
+    TRAIN_TEST_SPLIT,
+    MAX_INFERENCE_SAMPLES,
+)
+from src.pipelines.model_training_pipeline import nutrition_training_pipeline
 
-# Add the project root to Python path
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, project_root)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-from src.pipelines.model_training_pipeline import nutrition_assistant_training_pipeline
 
-# Configuration
-PROJECT_ID = os.getenv("GCP_PROJECT_ID")
-REGION = os.getenv("GCP_REGION", "europe-west2")
-BUCKET_NAME = os.getenv("GCP_BUCKET_NAME")
-PIPELINE_ROOT = f"gs://{BUCKET_NAME}/pipeline_runs"
-
-# Pipeline configuration
-PIPELINE_NAME = "nutrition-assistant-training"
-DISPLAY_NAME = "Nutrition Assistant Training Pipeline with Fine-tuning"
-
-def compile_pipeline():
-    """Compile the pipeline to a JSON file."""
-    print("🔧 Compiling pipeline...")
+def compile_pipeline(output_file: str = "compiled_pipeline.yaml"):
+    """Compile the Kubeflow pipeline to YAML.
     
-    # Create output directory if it doesn't exist
-    os.makedirs("pipeline_artifacts", exist_ok=True)
+    Args:
+        output_file: Output filename for compiled pipeline
+    """
+    logger.info(f"Compiling pipeline to {output_file}")
     
-    # Define the compiled pipeline path
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    compiled_pipeline_path = f"pipeline_artifacts/{PIPELINE_NAME}_{timestamp}.json"
-    
-    # Compile the pipeline
-    compiler = Compiler()
-    compiler.compile(
-        pipeline_func=nutrition_assistant_training_pipeline,
-        package_path=compiled_pipeline_path
+    compiler.Compiler().compile(
+        pipeline_func=nutrition_training_pipeline,
+        package_path=output_file,
     )
     
-    print(f"✅ Pipeline compiled successfully to: {compiled_pipeline_path}")
-    return compiled_pipeline_path
+    logger.info(f"✅ Pipeline compiled successfully to {output_file}")
+    return output_file
 
-def submit_pipeline(compiled_pipeline_path: str):
-    """Submit the pipeline to Vertex AI."""
-    print("🚀 Submitting pipeline to Vertex AI...")
+
+def submit_pipeline(
+    compiled_pipeline_path: str,
+    enable_caching: bool = False,
+):
+    """Submit the compiled pipeline to Vertex AI.
     
+    Args:
+        compiled_pipeline_path: Path to compiled pipeline YAML
+        enable_caching: Whether to enable pipeline caching
+    """
     # Initialize Vertex AI
-    aiplatform.init(project=PROJECT_ID, location=REGION)
+    logger.info(f"Initializing Vertex AI with project: {GCP_PROJECT_ID}, region: {GCP_REGION}")
+    aiplatform.init(
+        project=GCP_PROJECT_ID,
+        location=GCP_REGION,
+    )
     
-    # Create a unique job name
+    # Prepare pipeline parameters
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    job_name = f"{PIPELINE_NAME}-{timestamp}"
+    gcs_data_uri = f"{GCS_BUCKET_URI}/COMBINED_FOOD_DATASET.csv"
     
-    # Define pipeline parameters
-    pipeline_parameters = {
-        "input_gcs_path": f"gs://{BUCKET_NAME}/20-10-2025-08:28:00 - FOOD/COMBINED_FOOD_DATASET.csv",
-        "output_gcs_bucket": BUCKET_NAME,
-        "test_size": 0.2,
-        "random_state": 42,
-        # Fine-tuning parameters
-        "model_name": "microsoft/Phi-3-mini-4k-instruct",
-        "learning_rate": 2e-4,
-        "num_train_epochs": 1,
-        "per_device_train_batch_size": 1,
-        "gradient_accumulation_steps": 4,
-        "lora_r": 16,
-        "lora_alpha": 32,
-        # Inference parameters
-        "max_new_tokens": 50,
-        "temperature": 0.7,
-        "num_inference_samples": -1
+    pipeline_params = {
+        "gcs_data_uri": gcs_data_uri,
+        "model_name": MODEL_NAME,
+        "train_test_split": TRAIN_TEST_SPLIT,
+        "max_inference_samples": MAX_INFERENCE_SAMPLES,
+        "lora_config": LORA_CONFIG,
+        "training_config": TRAINING_CONFIG,
+        "quantization_config": QUANTIZATION_CONFIG,
     }
     
-    # Submit the pipeline job
+    logger.info(f"Pipeline parameters:")
+    logger.info(f"  - Data URI: {gcs_data_uri}")
+    logger.info(f"  - Model: {MODEL_NAME}")
+    logger.info(f"  - Train/Test Split: {TRAIN_TEST_SPLIT}")
+    logger.info(f"  - Max Inference Samples: {MAX_INFERENCE_SAMPLES}")
+    
+    # Create pipeline job
+    job_name = f"{PIPELINE_NAME}_{timestamp}"
+    
+    logger.info(f"\n🚀 Submitting pipeline job: {job_name}")
+    
     job = aiplatform.PipelineJob(
-        display_name=f"{DISPLAY_NAME} - {timestamp}",
+        display_name=job_name,
         template_path=compiled_pipeline_path,
-        pipeline_root=PIPELINE_ROOT,
-        parameter_values=pipeline_parameters,
-        enable_caching=True
+        pipeline_root=GCS_PIPELINE_ROOT,
+        parameter_values=pipeline_params,
+        enable_caching=enable_caching,
     )
     
-    print(f"📊 Pipeline job details:")
-    print(f"   Job name: {job_name}")
-    print(f"   Display name: {DISPLAY_NAME} - {timestamp}")
-    print(f"   Pipeline root: {PIPELINE_ROOT}")
-    print(f"   Parameters: {pipeline_parameters}")
-    
     # Submit the job
-    job.submit(service_account=None)
+    job.submit()
     
-    print(f"✅ Pipeline submitted successfully!")
-    print(f"🔗 View the pipeline run at:")
-    print(f"   https://console.cloud.google.com/vertex-ai/pipelines/runs?project={PROJECT_ID}")
-    print(f"🆔 Job resource name: {job.resource_name}")
+    logger.info(f"\n✅ Pipeline job submitted successfully!")
+    logger.info(f"📊 Job name: {job_name}")
+    logger.info(f"🔗 View pipeline execution in GCP Console:")
+    logger.info(f"   https://console.cloud.google.com/vertex-ai/pipelines/runs/{job.resource_name.split('/')[-1]}?project={GCP_PROJECT_ID}")
+    logger.info(f"\n⏳ Pipeline is now running on Vertex AI...")
+    logger.info(f"   You can monitor progress in the GCP Console link above")
     
     return job
 
-def main():
-    """Main function to compile and submit the pipeline."""
-    print("=" * 60)
-    print("🍎 Nutrition Assistant Training Pipeline Runner")
-    print("=" * 60)
+
+def run_pipeline(compile_only: bool = False, enable_caching: bool = False):
+    """Main function to compile and optionally submit the pipeline.
     
-    # Validate environment variables
-    if not all([PROJECT_ID, REGION, BUCKET_NAME]):
-        print("❌ Error: Missing required environment variables!")
-        print(f"   GCP_PROJECT_ID: {PROJECT_ID or 'NOT SET'}")
-        print(f"   GCP_REGION: {REGION or 'NOT SET'}")
-        print(f"   GCP_BUCKET_NAME: {BUCKET_NAME or 'NOT SET'}")
-        print("\nPlease check your .env file.")
-        return False
-    
-    print(f"📋 Configuration:")
-    print(f"   Project ID: {PROJECT_ID}")
-    print(f"   Region: {REGION}")
-    print(f"   Bucket: {BUCKET_NAME}")
-    print(f"   Pipeline root: {PIPELINE_ROOT}")
-    print()
-    
+    Args:
+        compile_only: If True, only compile without submitting
+        enable_caching: Whether to enable pipeline caching
+    """
     try:
-        # Step 1: Compile the pipeline
-        compiled_pipeline_path = compile_pipeline()
+        # Compile the pipeline
+        compiled_pipeline = compile_pipeline("compiled_nutrition_pipeline.yaml")
         
-        # Step 2: Submit the pipeline
-        job = submit_pipeline(compiled_pipeline_path)
+        if compile_only:
+            logger.info("✅ Compilation complete. Skipping submission (compile_only=True)")
+            return None
         
-        print("\n" + "=" * 60)
-        print("🎉 Pipeline execution started successfully!")
-        print("=" * 60)
-        print(f"📁 Compiled pipeline saved to: {compiled_pipeline_path}")
-        print(f"🔍 Monitor the pipeline execution in the GCP console.")
-        print(f"📊 Check for output datasets in: gs://{BUCKET_NAME}/processed_data/")
+        # Submit to Vertex AI
+        job = submit_pipeline(compiled_pipeline, enable_caching=enable_caching)
         
-        return True
+        return job
         
     except Exception as e:
-        print(f"\n❌ Error: {str(e)}")
-        print("Please check your GCP authentication and permissions.")
-        return False
+        logger.error(f"❌ Error running pipeline: {e}")
+        raise
+
 
 if __name__ == "__main__":
-    success = main()
-    if not success:
-        sys.exit(1)
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Run the nutrition training pipeline")
+    parser.add_argument(
+        "--compile-only",
+        action="store_true",
+        help="Only compile the pipeline without submitting to Vertex AI"
+    )
+    parser.add_argument(
+        "--enable-caching",
+        action="store_true",
+        help="Enable pipeline caching"
+    )
+    
+    args = parser.parse_args()
+    
+    run_pipeline(
+        compile_only=args.compile_only,
+        enable_caching=args.enable_caching,
+    )
