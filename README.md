@@ -146,34 +146,61 @@ python scripts/check_endpoint_status.pysource .venv/bin/activate  # Linux/Mac
 
 
 
-### Launch the Chatbot (3 Steps)### 2. Configure GCP
+### 🚀 Launcher - Start/Stop Your Chatbot
 
+#### ▶️ Start the Chatbot (3 Steps)
 
+```powershell
+# Step 1: Deploy model to endpoint (wait 5-10 minutes)
+python scripts/deploy_to_endpoint.py
 
-```powershell```bash
+# Step 2: Verify deployment is complete
+python scripts/check_endpoint_status.py
+# Look for: "✅ DEPLOYMENT COMPLETE!" and Status: "SERVING"
 
-# 1. Deploy model to endpoint (wait 5-10 minutes)# Authenticate with GCP
-
-python scripts/deploy_to_endpoint.pygcloud auth login
-
-gcloud config set project aerobic-polygon-460910-v9
-
-# 2. Verify deployment is complete
-
-python scripts/check_endpoint_status.py# Enable required APIs
-
-# Look for: "✅ DEPLOYMENT COMPLETE!" and Status: "SERVING"gcloud services enable aiplatform.googleapis.com
-
-gcloud services enable storage-component.googleapis.com
-
-# 3. Launch web interfacegcloud services enable compute.googleapis.com
-
-python -m chainlit run src/app/main.py -w```
-
+# Step 3: Launch web interface
+python -m chainlit run src/app/main.py -w
 # Opens at: http://localhost:8000
+```
 
-```### 3. Setup Environment Variables
+**🔗 Monitor Your Deployment:**
+- **Endpoint Status:** [View in GCP Console](https://console.cloud.google.com/vertex-ai/online-prediction/endpoints/5724492940806455296?project=aerobic-polygon-460910-v9)
+- **Pipeline Runs:** [View Training History](https://console.cloud.google.com/vertex-ai/pipelines?project=aerobic-polygon-460910-v9)
+- **Storage:** [View GCS Bucket](https://console.cloud.google.com/storage/browser/llmops_101_europ?project=aerobic-polygon-460910-v9)
 
+#### ⏹️ Stop Everything (IMPORTANT - Save Money!)
+
+```powershell
+# Step 1: Stop the chatbot interface
+# Press Ctrl+C in the terminal running Chainlit
+
+# Step 2: Undeploy model (STOPS BILLING!)
+python scripts/undeploy_model.py
+
+# Step 3: Verify model is undeployed
+python scripts/check_endpoint_status.py
+# Should show: "Status: No models deployed"
+```
+
+**💰 Current Cost:** $0/hour when undeployed | ~$0.50-$1.00/hour when deployed
+
+---
+
+### 2. Configure GCP (One-Time Setup)
+
+```bash
+# Authenticate with GCP
+gcloud auth login
+gcloud config set project aerobic-polygon-460910-v9
+gcloud auth application-default login
+
+# Enable required APIs
+gcloud services enable aiplatform.googleapis.com
+gcloud services enable storage-component.googleapis.com
+gcloud services enable compute.googleapis.com
+```
+
+### 3. Setup Environment Variables
 
 
 ### Stop Everything (Save Money!)Create a `.env` file in the project root:
