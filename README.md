@@ -58,9 +58,9 @@ End-to-End Pipeline:python scripts/undeploy_model.py               # Stop billin
 
 │ 1. DATA PROCESSING                                              │
 
-│    ├─ 2,395 food items from COMBINED_FOOD_DATASET.csv         │📖 **Full Guide:** See [`HOW_TO_LAUNCH.md`](HOW_TO_LAUNCH.md) or [`QUICK_REFERENCE.md`](QUICK_REFERENCE.md)
+│    ├─ 2,395 food items from COMBINED_FOOD_DATASET.csv           │ **Full Guide:** See [`HOW_TO_LAUNCH.md`](HOW_TO_LAUNCH.md) or [`QUICK_REFERENCE.md`](QUICK_REFERENCE.md)
 
-│    └─ Converted to conversational Q&A format                   │
+│    └─ Converted to conversational Q&A format                    │
 
 ├─────────────────────────────────────────────────────────────────┤##  Architecture
 
@@ -76,23 +76,23 @@ End-to-End Pipeline:python scripts/undeploy_model.py               # Stop billin
 
 ├─────────────────────────────────────────────────────────────────┤│   ├── Fine-Tuning → Trains Phi-3 with LoRA on GPU
 
-│ 3. MODEL DEPLOYMENT (Vertex AI Endpoint)                       ││   ├── Inference → Generates predictions
+│ 3. MODEL DEPLOYMENT (Vertex AI Endpoint)                        ││   ├── Inference → Generates predictions
 
-│    ├─ Custom handler for Vertex AI format                     ││   └── Evaluation → Computes Rouge, BLEU metrics
+│    ├─ Custom handler for Vertex AI format                       ││   └── Evaluation → Computes Rouge, BLEU metrics
 
-│    ├─ Endpoint with GPU (n1-standard-8 + Tesla T4)           ││
+│    ├─ Endpoint with GPU (n1-standard-8 + Tesla T4)              ││
 
-│    └─ Deploy/Undeploy on demand (cost optimization)           │└── Production Deployment
+│    └─ Deploy/Undeploy on demand (cost optimization)             │└── Production Deployment
 
-├─────────────────────────────────────────────────────────────────┤    ├── Custom Handler → Processes Vertex AI requests
+├─────────────────────────────────────────────────────────────────┤├── Custom Handler → Processes Vertex AI requests
 
-│ 4. WEB INTERFACE (Chainlit)                                    │    ├── Endpoint → Serves model with Tesla T4 GPU
+│ 4. WEB INTERFACE (Chainlit)                                     │├── Endpoint → Serves model with Tesla T4 GPU
 
-│    ├─ Beautiful chat interface at localhost:8000              │    └── Chainlit UI → Beautiful chat interface
+│    ├─ Beautiful chat interface at localhost:8000                │└── Chainlit UI → Beautiful chat interface
 
-│    ├─ Google Cloud authentication (ADC)                       │```
+│    ├─ Google Cloud authentication (ADC)                         │```
 
-│    └─ Real-time responses from fine-tuned model               │
+│    └─ Real-time responses from fine-tuned model                 │
 
 └─────────────────────────────────────────────────────────────────┘##  Prerequisites
 
@@ -146,9 +146,9 @@ python scripts/check_endpoint_status.pysource .venv/bin/activate  # Linux/Mac
 
 
 
-### 🚀 Launcher - Start/Stop Your Chatbot
+###  Launcher - Start/Stop Your Chatbot
 
-#### ▶️ Start the Chatbot (3 Steps)
+####  Start the Chatbot (3 Steps)
 
 ```powershell
 # Step 1: Deploy model to endpoint (wait 5-10 minutes)
@@ -156,7 +156,7 @@ python scripts/deploy_to_endpoint.py
 
 # Step 2: Verify deployment is complete
 python scripts/check_endpoint_status.py
-# Look for: "✅ DEPLOYMENT COMPLETE!" and Status: "SERVING"
+# Look for: " DEPLOYMENT COMPLETE!" and Status: "SERVING"
 
 # Step 3: Launch web interface
 python -m chainlit run src/app/main.py -w
@@ -182,7 +182,7 @@ python scripts/check_endpoint_status.py
 # Should show: "Status: No models deployed"
 ```
 
-**💰 Current Cost:** $0/hour when undeployed | ~$0.50-$1.00/hour when deployed
+** Current Cost:** $0/hour when undeployed | ~$0.50-$1.00/hour when deployed
 
 ---
 
