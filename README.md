@@ -2,7 +2,7 @@
 
 
 
-**Status:** ✅ Production Ready | **Cost:** $0/hour (when undeployed)  **Status:** ✅ Production Ready | **Cost:** $0/hour (when undeployed)
+**Status:** Production Ready | **Cost:** $0/hour (when undeployed)  **Status:**  Production Ready | **Cost:** $0/hour (when undeployed)
 
 **Built for:** Albert School LLM OPS Bootcamp MSC2  
 
@@ -10,7 +10,7 @@
 
 
 
----## 🎯 Project Overview
+ Project Overview
 
 
 
@@ -42,7 +42,7 @@ python scripts/deploy_to_endpoint.py          # Deploy model (wait 5-10 min)
 
 python -m chainlit run src/app/main.py -w      # Launch UI at localhost:8000
 
-## 🎯 Project Overview```
+##  Project Overview```
 
 
 
@@ -62,7 +62,7 @@ End-to-End Pipeline:python scripts/undeploy_model.py               # Stop billin
 
 │    └─ Converted to conversational Q&A format                   │
 
-├─────────────────────────────────────────────────────────────────┤## 🏗️ Architecture
+├─────────────────────────────────────────────────────────────────┤##  Architecture
 
 │ 2. MODEL TRAINING (Vertex AI Pipeline)                         │
 
@@ -94,7 +94,7 @@ End-to-End Pipeline:python scripts/undeploy_model.py               # Stop billin
 
 │    └─ Real-time responses from fine-tuned model               │
 
-└─────────────────────────────────────────────────────────────────┘## 📋 Prerequisites
+└─────────────────────────────────────────────────────────────────┘##  Prerequisites
 
 ```
 
