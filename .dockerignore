@@ -1,0 +1,17 @@
+.git
+.venv
+__pycache__/
+*.py[cod]
+*.swp
+*.tmp
+*.log
+.env
+.env.*
+compiled_pipelines/
+data/
+outputs/
+docs/
+tests/
+notebooks/
+*.ipynb
+*.csv
